@@ -28,5 +28,18 @@ async function initialize() {
       player_email TEXT PRIMARY KEY NOT NULL,
       created_at TEXT NOT NULL
     )`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS promo_claims (
+      player_email TEXT PRIMARY KEY NOT NULL,
+      code TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    )`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS slot_results (
+      id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+      player_email TEXT NOT NULL,
+      bet INTEGER NOT NULL,
+      payout INTEGER NOT NULL,
+      grid TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    )`),
   ]);
 }
