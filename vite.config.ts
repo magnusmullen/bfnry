@@ -1,7 +1,7 @@
 import vinext from "vinext";
 import { defineConfig } from "vite";
 
-const LOCAL_DATABASE_ID = "00000000-0000-4000-8000-000000000000";
+const DATABASE_ID = "b818f960-a503-48d6-bd40-a891d7970206";
 
 export default defineConfig(async () => {
   process.env.WRANGLER_WRITE_LOGS ??= "false";
@@ -22,7 +22,7 @@ export default defineConfig(async () => {
             {
               binding: "DB",
               database_name: "bfnry-db",
-              database_id: LOCAL_DATABASE_ID,
+              database_id: DATABASE_ID,
             },
           ],
         },
