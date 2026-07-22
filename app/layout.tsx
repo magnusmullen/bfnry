@@ -7,7 +7,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = requestHeaders.get("host") ?? "localhost:3000";
   const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   const image = `${protocol}://${host}/og.png`;
-  const title = "BFNRY — The Group Chat Arcade";
+  const title = "BFNRY — Whimsi Arcade";
   const description = "Tiny games for familiar people. Drop in, make a choice, and see what the moment gives you.";
 
   return {

@@ -62,16 +62,16 @@ export function Arcade() {
       <button className={`bonus-bubble ${bonusState}`} type="button" onClick={() => void claimBonus()} disabled={bonusState !== "idle"} aria-label="Collect 30 bonus Suds"><span>{bonusState === "claiming" ? "…" : bonusState === "claimed" ? "✓" : "+30"}</span><small>{bonusMessage || "Suds"}</small></button>
 
       <header className="nav-shell">
-        <a className="brand" href="#top" aria-label="BFNRY home"><span className="brand-mark"><b /></span><span><strong>BFNRY</strong><small>friends online</small></span></a>
+        <a className="brand" href="#top" aria-label="BFNRY home"><span className="brand-mark"><b /></span><span><strong>BFNRY</strong><small>Whimsy online</small></span></a>
         <nav aria-label="Primary navigation"><a className="active" href="#play">Play</a><a href="#pulse">Pulse</a><a href="#about">About</a></nav>
         <div className="player-pill" aria-live="polite"><i /><span>{loading ? "Connecting…" : profile?.displayName ?? "Offline"}</span><strong>{profile ? `${profile.balance} Suds` : "—"}</strong></div>
       </header>
 
       <section className="hero" id="top">
         <div className="hero-orbit" aria-hidden="true"><span /><span /><span /></div>
-        <p className="overline">THE GROUP CHAT ARCADE</p>
-        <h1>A little luck,<br /><em>shared together.</em></h1>
-        <p className="hero-copy">Tiny games for familiar people. Drop in, make a choice, and see what the moment gives you.</p>
+        <p className="overline">Buffoonery Inc. Presents</p>
+        <h1>buffoonery,<br /><em>on the web</em></h1>
+        <p className="hero-copy">Magnus' little haven for all buffoons to enjoy.</p>
         <a className="hero-action" href="#play"><span>Enter the arcade</span><b>↓</b></a>
       </section>
 
@@ -80,29 +80,29 @@ export function Arcade() {
           <span className="game-orb" aria-hidden="true"><b>?</b></span>
           <p className="overline">NOW PLAYING</p>
           <h2 id="game-heading">Odd or Even</h2>
-          <p>Choose a side. We’ll roll the signal and let chance do the rest.</p>
+          <p>Choose a side. We’ll roll the number and see what you get! Best of luck hehe! :)</p>
           <div className="rules"><span><small>PLAY</small>10 Suds</span><span><small>WIN</small>+10 Suds</span><span><small>CHANCE</small>50 / 50</span></div>
-          <div className="soft-note"><span>i</span><p>Your first feeling is usually the right one.</p></div>
+          <div className="soft-note"><span>i</span><p>This is the first game made on this website!</p></div>
         </div>
 
         <div className="game-stage">
-          <div className="stage-head"><span>Choose your feeling</span><span>Round 001</span></div>
+          <div className="stage-head"><span>Choose odd or even, yo!</span><span>Round 001</span></div>
           <fieldset disabled={!profile || playing}><legend className="sr-only">Your choice</legend>
-            <label className={choice === "odd" ? "choice selected" : "choice"}><input type="radio" name="choice" checked={choice === "odd"} onChange={() => setChoice("odd")} /><span className="number-set">1 · 3 · 5</span><strong>Odd</strong><small>follow the spark</small><i>✓</i></label>
-            <label className={choice === "even" ? "choice selected" : "choice"}><input type="radio" name="choice" checked={choice === "even"} onChange={() => setChoice("even")} /><span className="number-set">2 · 4 · 6</span><strong>Even</strong><small>find the balance</small><i>✓</i></label>
+            <label className={choice === "odd" ? "choice selected" : "choice"}><input type="radio" name="choice" checked={choice === "odd"} onChange={() => setChoice("odd")} /><span className="number-set">1 · 3 · 5</span><strong>Odd</strong><small>this feels odd...</small><i>✓</i></label>
+            <label className={choice === "even" ? "choice selected" : "choice"}><input type="radio" name="choice" checked={choice === "even"} onChange={() => setChoice("even")} /><span className="number-set">2 · 4 · 6</span><strong>Even</strong><small>even it out!</small><i>✓</i></label>
           </fieldset>
-          <button className="roll" type="button" onClick={() => void play()} disabled={playing || !profile || profile.balance < 10}><span>{playing ? "Listening…" : "Roll the signal"}</span><b>›</b></button>
+          <button className="roll" type="button" onClick={() => void play()} disabled={playing || !profile || profile.balance < 10}><span>{playing ? "Hmm..." : "Go for Gold"}</span><b>›</b></button>
           {loading && <p className="message">Finding your place…</p>}
           {accountError && <div className="message error" role="alert">Couldn’t find your player. <button onClick={() => void loadAccount()}>Try again</button></div>}
           {profile && profile.balance < 10 && <p className="message error">You need at least 10 Suds to play.</p>}
           {gameError && <p className="message error" role="alert">{gameError}</p>}
-          {result && <div className={result.won ? "result won" : "result lost"} aria-live="polite"><span>{result.roll}</span><div><small>THE SIGNAL SAYS</small><h3>{result.won ? "You found it." : "Almost."}</h3><p>{result.delta > 0 ? "+" : ""}{result.delta} Suds · {result.balance} remaining</p></div></div>}
+          {result && <div className={result.won ? "result won" : "result lost"} aria-live="polite"><span>{result.roll}</span><div><small>THE SIGNAL SAYS</small><h3>{result.won ? "SHABANG!!!" : "Almost."}</h3><p>{result.delta > 0 ? "+" : ""}{result.delta} Suds · {result.balance} remaining</p></div></div>}
         </div>
       </section>
 
-      <section className="pulse" id="pulse"><span><i /> Everything feels clear</span><span>Local time · 20:07</span><span>Friends online · ∞</span></section>
-      <section className="about" id="about"><article><span className="mini-orb">○</span><div><small>YOUR PEOPLE</small><h3>Closer, not louder.</h3><p>No feeds to chase. Just a small place to play with the people already in your world.</p></div></article><article><span className="mini-orb blue">◇</span><div><small>YOUR MOMENT</small><h3>Nothing to optimize.</h3><p>Win, lose, laugh, leave. The arcade asks for seconds—not your whole attention.</p></div></article></section>
-      <footer><a className="brand" href="#top"><span className="brand-mark"><b /></span><span><strong>BFNRY</strong><small>friends online</small></span></a><p>Somewhere between here and there.</p><div><a href="#play">Play</a><a href="#about">About</a></div></footer>
+      <section className="pulse" id="pulse"><span><i /> Everything feels clear</span><span>1 Thessalonians 5:16</span><span>"Rejoice always."</span></section>
+      <section className="about" id="about"><article><span className="mini-orb">○</span><div><small>THIS SITE</small><h3>For fun, nothing serious</h3><p>This site is just for me to build cool things, mostly vibe coded.</p></div></article><article><span className="mini-orb blue">◇</span><div><small>AND SO?</small><h3>Stuff coming soon</h3><p>I would like to add more games, functions, reasons to come back and play!</p></div></article></section>
+      <footer><a className="brand" href="#top"><span className="brand-mark"><b /></span><span><strong>BFNRY</strong><small>Whimsy online</small></span></a><p>IT'S JOHN MARSTON, MICAH!</p><div><a href="#play">Play</a><a href="#about">About</a></div></footer>
     </main>
   );
 }
