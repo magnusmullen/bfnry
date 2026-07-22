@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PAYLINES, SLOT_SYMBOLS, type SlotGrid, type SlotWin } from "./slots";
+import { PAYLINES, symbolFromRandom, type LuckyBonus, type SlotGrid, type SlotWin } from "./slots";
 
 type Profile = { displayName: string; balance: number; demo: boolean; bonusClaimed?: boolean; promoClaimed?: boolean };
 type GameResult = Profile & { roll: number; won: boolean; delta: number };
-type SlotsResult = Profile & { grid: SlotGrid; wins: SlotWin[]; payout: number; delta: number; bet: number };
+type SlotsResult = Profile & { grid: SlotGrid; wins: SlotWin[]; luckyBonus: LuckyBonus | null; payout: number; delta: number; bet: number };
 const START_GRID: SlotGrid = [["A", "K", "Q", "J", "10"], ["Q", "J", "10", "A", "K"], ["10", "A", "K", "Q", "J"]];
 const LINE_COLORS = ["#ffe06f", "#ff8fa7", "#80f0dd", "#9db7ff", "#f7a9ff"];
 
@@ -117,7 +117,7 @@ export function Arcade() {
       setGrid((current) => current.map((row, rowIndex) => row.map((symbol, reelIndex) =>
         targetGrid && reelIndex < lockedReels
           ? targetGrid[rowIndex][reelIndex]
-          : SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)] ?? symbol
+          : symbolFromRandom(Math.floor(Math.random() * 0x100000000)) ?? symbol
       )) as SlotGrid);
     }, 72);
     try {
@@ -158,17 +158,17 @@ export function Arcade() {
 
     <div className="game-tabs" role="tablist" aria-label="Choose a game"><button role="tab" aria-selected={game === "slots"} onClick={() => { setGame("slots"); setGameError(""); }}>Suds &amp; Symbols <small>NEW</small></button><button role="tab" aria-selected={game === "odd"} onClick={() => { setGame("odd"); setGameError(""); }}>Odd or Even</button></div>
     <section className={`play-space ${game === "slots" ? "slots-space" : ""}`} id="play" aria-labelledby="game-heading">
-      <div className="game-intro"><span className="game-orb" aria-hidden="true"><b>{game === "slots" ? "5" : "?"}</b></span><p className="overline">NOW PLAYING</p><h2 id="game-heading">{game === "slots" ? "Suds & Symbols" : "Odd or Even"}</h2><p>{game === "slots" ? `Match 3–5 symbols from the left across any of ${PAYLINES.length} natural paylines. Every unique winning line pays.` : "Choose a side. We’ll roll the number and see what you get! Best of luck hehe! :)"}</p><div className="rules">{game === "slots" ? <><span><small>MIN BET</small>5 Suds</span><span><small>LINES</small>{PAYLINES.length} active</span><span><small>MATCH</small>3 / 4 / 5</span></> : <><span><small>PLAY</small>10 Suds</span><span><small>WIN</small>+10 Suds</span><span><small>CHANCE</small>50 / 50</span></>}</div><div className="soft-note"><span>i</span><p>{game === "slots" ? "A pays highest, followed by K, Q, J, then 10." : "This is the first game made on this website!"}</p></div></div>
+      <div className="game-intro"><span className="game-orb" aria-hidden="true"><b>{game === "slots" ? "5" : "?"}</b></span><p className="overline">NOW PLAYING</p><h2 id="game-heading">{game === "slots" ? "Suds & Symbols" : "Odd or Even"}</h2><p>{game === "slots" ? `Match 3–5 symbols from the left across any of ${PAYLINES.length} natural paylines. Every unique winning line pays.` : "Choose a side. We’ll roll the number and see what you get! Best of luck hehe! :)"}</p><div className="rules">{game === "slots" ? <><span><small>MIN BET</small>5 Suds</span><span><small>LINES</small>{PAYLINES.length} active</span><span><small>LUCKY</small>Wild + bonus</span></> : <><span><small>PLAY</small>10 Suds</span><span><small>WIN</small>+10 Suds</span><span><small>CHANCE</small>50 / 50</span></>}</div><div className="soft-note"><span>i</span><p>{game === "slots" ? "LUCKY is wild. Find 3 anywhere for a big bonus, 4 for super, or 5+ for buffoon." : "This is the first game made on this website!"}</p></div></div>
 
       {game === "slots" ? <div className="game-stage slot-stage">
         <div className="stage-head"><span>{PAYLINES.length} ways to make a splash</span><span>{slotsResult ? `${slotsResult.wins.length} line${slotsResult.wins.length === 1 ? "" : "s"} hit` : "Ready"}</span></div>
         <div className={`slot-machine ${playing ? "spinning" : ""}`} aria-label="Three row by five reel slot result">
-          <div className="slot-grid">{grid.map((row, rowIndex) => row.map((symbol, reelIndex) => <div className={`slot-cell ${playing && reelIndex >= stoppedReels ? "reel-spinning" : "reel-stopped"}`} key={`${rowIndex}-${reelIndex}`}><img src={`/slots/${symbol}.png`} alt={playing && reelIndex >= stoppedReels ? "Spinning reel" : symbol} /></div>))}</div>
+          <div className="slot-grid">{grid.map((row, rowIndex) => row.map((symbol, reelIndex) => <div className={`slot-cell ${symbol === "LUCKY" ? "lucky" : ""} ${playing && reelIndex >= stoppedReels ? "reel-spinning" : "reel-stopped"}`} key={`${rowIndex}-${reelIndex}`}><img src={`/slots/${symbol}.png`} alt={playing && reelIndex >= stoppedReels ? "Spinning reel" : symbol} /></div>))}</div>
           {slotsResult?.wins.length ? <PaylineCanvas wins={slotsResult.wins} /> : null}
         </div>
         <div className="bet-bar"><span>BET</span><button onClick={() => setBet(Math.max(5, bet - 5))} disabled={playing || bet <= 5} aria-label="Decrease bet">−</button><strong>{bet} <small>Suds</small></strong><button onClick={() => setBet(Math.min(100, bet + 5))} disabled={playing || bet >= 100} aria-label="Increase bet">+</button></div>
         <button className="roll slot-spin" type="button" onClick={() => void spin()} disabled={playing || !canPlay}><span>{playing ? "Spinning…" : `Spin for ${bet} Suds`}</span><b>›</b></button>
-        {slotsResult && <div className={`slot-summary ${slotsResult.payout ? "won" : "lost"}`} aria-live="polite"><div><small>{slotsResult.payout ? "TOTAL WIN" : "NO LINE WIN"}</small><strong>{slotsResult.payout ? `${slotsResult.payout} Suds` : "Try again"}</strong><span>{slotsResult.delta >= 0 ? "+" : ""}{slotsResult.delta} net · {slotsResult.balance} remaining</span></div>{slotsResult.wins.length > 0 && <div className="win-list">{slotsResult.wins.map((win, i) => <div className="win-chip" style={{ "--line-color": LINE_COLORS[i % LINE_COLORS.length] } as React.CSSProperties} key={win.line}><b>LINE {win.line}</b><span>{win.symbol} × {win.count}</span><strong>{win.multiplier}×</strong><em>+{win.payout}</em></div>)}</div>}</div>}
+        {slotsResult && <div className={`slot-summary ${slotsResult.payout ? "won" : "lost"} ${slotsResult.luckyBonus ? "lucky-win" : ""}`} aria-live="polite">{slotsResult.luckyBonus && <div className="lucky-bonus"><small>{slotsResult.luckyBonus.count} LUCKIES</small><strong>{slotsResult.luckyBonus.tier}!</strong><span>{slotsResult.luckyBonus.multiplier}× BET · +{slotsResult.luckyBonus.payout} SUDS</span></div>}<div><small>{slotsResult.payout ? "TOTAL WIN" : "NO LINE WIN"}</small><strong>{slotsResult.payout ? `${slotsResult.payout} Suds` : "Try again"}</strong><span>{slotsResult.delta >= 0 ? "+" : ""}{slotsResult.delta} net · {slotsResult.balance} remaining</span></div>{slotsResult.wins.length > 0 && <div className="win-list">{slotsResult.wins.map((win, i) => <div className="win-chip" style={{ "--line-color": LINE_COLORS[i % LINE_COLORS.length] } as React.CSSProperties} key={win.line}><b>LINE {win.line}</b><span>{win.symbol} × {win.count}</span><strong>{win.multiplier}×</strong><em>+{win.payout}</em></div>)}</div>}</div>}
         {!slotsResult && <p className="pay-hint">Each winning line has its own multiplier and payout.</p>}
         {profile && profile.balance < bet && <p className="message error">Lower your bet or collect more Suds.</p>}
         {gameError && <p className="message error" role="alert">{gameError}</p>}
