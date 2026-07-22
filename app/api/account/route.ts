@@ -8,7 +8,8 @@ export async function GET(request: Request) {
   const now = new Date().toISOString();
   await env.DB.prepare("INSERT OR IGNORE INTO players (email, display_name, balance, created_at, updated_at) VALUES (?, ?, 100, ?, ?)").bind(user.email, user.displayName, now, now).run();
   const player = await env.DB.prepare("SELECT display_name, balance FROM players WHERE email = ?").bind(user.email).first<{ display_name: string; balance: number }>();
-  const response = Response.json({ displayName: player?.display_name ?? user.displayName, balance: player?.balance ?? 100, demo: user.demo });
+  const claim = await env.DB.prepare("SELECT player_email FROM bonus_claims WHERE player_email = ?").bind(user.email).first();
+  const response = Response.json({ displayName: player?.display_name ?? user.displayName, balance: player?.balance ?? 100, demo: user.demo, bonusClaimed: Boolean(claim) });
   if (user.cookie) response.headers.set("Set-Cookie", user.cookie);
   return response;
 }

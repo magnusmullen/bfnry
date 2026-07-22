@@ -24,5 +24,9 @@ async function initialize() {
       delta INTEGER NOT NULL,
       created_at TEXT NOT NULL
     )`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS bonus_claims (
+      player_email TEXT PRIMARY KEY NOT NULL,
+      created_at TEXT NOT NULL
+    )`),
   ]);
 }
