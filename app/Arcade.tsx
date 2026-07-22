@@ -1,83 +1,126 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type Profile = { displayName: string; balance: number; demo: boolean };
 type GameResult = Profile & { roll: number; won: boolean; delta: number };
 
+async function readJson<T>(response: Response): Promise<T> {
+  const body = await response.json() as T & { error?: string };
+  if (!response.ok) throw new Error(body.error ?? "Request failed");
+  return body;
+}
+
 export function Arcade() {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [choice, setChoice] = useState<"odd" | "even">("even");
+  const [choice, setChoice] = useState<"odd" | "even">("odd");
   const [result, setResult] = useState<GameResult | null>(null);
+  const [accountError, setAccountError] = useState("");
+  const [gameError, setGameError] = useState("");
   const [loading, setLoading] = useState(true);
   const [playing, setPlaying] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/account")
-      .then((response) => response.json())
-      .then(setProfile)
-      .finally(() => setLoading(false));
+  const loadAccount = useCallback(async () => {
+    setLoading(true);
+    setAccountError("");
+    try {
+      const response = await fetch("/api/account", { cache: "no-store" });
+      setProfile(await readJson<Profile>(response));
+    } catch (error) {
+      setAccountError(error instanceof Error ? error.message : "Could not load player");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadAccount();
+  }, [loadAccount]);
 
   async function play() {
     setPlaying(true);
-    const response = await fetch("/api/game", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ choice }),
-    });
-    const next = (await response.json()) as GameResult;
-    setResult(next);
-    setProfile(next);
-    setPlaying(false);
+    setGameError("");
+    try {
+      const response = await fetch("/api/game", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ choice }),
+      });
+      const next = await readJson<GameResult>(response);
+      setResult(next);
+      setProfile(next);
+    } catch (error) {
+      setGameError(error instanceof Error ? error.message : "Could not play game");
+    } finally {
+      setPlaying(false);
+    }
   }
 
   return (
     <main>
-      <nav className="nav">
-        <a className="brand" href="#top" aria-label="BFNRY home">
-          BFNRY<span>.</span>
-        </a>
-        <div className="account-pill">
-          <span className="coin" aria-hidden="true">B</span>
-          <strong>{loading ? "—" : profile?.balance ?? 0}</strong>
-          <span className="account-name">{profile?.displayName ?? "loading player"}</span>
-        </div>
-      </nav>
+      <h1>BFNRY</h1>
 
-      <section className="hero" id="top">
-        <div className="eyebrow"><i /> PRIVATE PLAYGROUND · V0.1</div>
-        <h1>A tiny internet arcade<br />for <em>the group chat.</em></h1>
-        <p>Play questionable games, earn extremely serious Bux, and claim bragging rights that have no cash value whatsoever.</p>
-        <a className="primary" href="#play">Play the first game <span>↓</span></a>
-        <div className="orb orb-one" /><div className="orb orb-two" />
-      </section>
-
-      <section className="game-wrap" id="play">
-        <div className="section-heading">
-          <div><span>GAME 001</span><h2>Odd or Even</h2></div>
-          <p>Pick a side. The server rolls 1–100. A win earns 10 Bux; a loss costs 10.</p>
-        </div>
-        <div className="game-card">
-          <div className="choice-row" role="group" aria-label="Choose odd or even">
-            <button className={choice === "odd" ? "selected" : ""} onClick={() => setChoice("odd")}><small>01</small> ODD</button>
-            <button className={choice === "even" ? "selected" : ""} onClick={() => setChoice("even")}><small>02</small> EVEN</button>
+      <section aria-labelledby="account-heading">
+        <h2 id="account-heading">Player</h2>
+        {loading && <p>Loading player...</p>}
+        {!loading && profile && (
+          <p>{profile.displayName} — {profile.balance} Bux</p>
+        )}
+        {accountError && (
+          <div role="alert">
+            <p>Player error: {accountError}</p>
+            <button type="button" onClick={() => void loadAccount()}>Try again</button>
           </div>
-          <div className={`result ${result ? (result.won ? "win" : "loss") : ""}`} aria-live="polite">
-            {result ? <><span className="roll">{result.roll}</span><strong>{result.won ? "YOU CALLED IT" : "NOT THIS TIME"}</strong><p>{result.delta > 0 ? "+" : ""}{result.delta} Bux · New balance: {result.balance}</p></> : <><span className="roll">?</span><strong>THE NUMBER AWAITS</strong><p>Each roll costs courage and possibly 10 Bux.</p></>}
+        )}
+      </section>
+
+      <section aria-labelledby="game-heading">
+        <h2 id="game-heading">Odd or Even</h2>
+        <p>Choose odd or even. A win earns 10 Bux and a loss costs 10 Bux.</p>
+
+        <fieldset disabled={!profile || playing}>
+          <legend>Your choice</legend>
+          <label>
+            <input
+              type="radio"
+              name="choice"
+              value="odd"
+              checked={choice === "odd"}
+              onChange={() => setChoice("odd")}
+            />
+            Odd
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="choice"
+              value="even"
+              checked={choice === "even"}
+              onChange={() => setChoice("even")}
+            />
+            Even
+          </label>
+        </fieldset>
+
+        <button
+          type="button"
+          onClick={() => void play()}
+          disabled={playing || !profile || profile.balance < 10}
+        >
+          {playing ? "Rolling..." : "Roll"}
+        </button>
+
+        {profile && profile.balance < 10 && <p>You need at least 10 Bux to play.</p>}
+        {gameError && <p role="alert">Game error: {gameError}</p>}
+        {result && (
+          <div aria-live="polite">
+            <h3>{result.won ? "You won" : "You lost"}</h3>
+            <p>Roll: {result.roll}</p>
+            <p>Change: {result.delta > 0 ? "+" : ""}{result.delta} Bux</p>
+            <p>Balance: {result.balance} Bux</p>
           </div>
-          <button className="play" onClick={play} disabled={playing || !profile || profile.balance < 10}>{playing ? "ROLLING…" : `ROLL ${choice.toUpperCase()}`}</button>
-        </div>
+        )}
       </section>
-
-      <section className="roadmap">
-        <div><span>NOW</span><strong>Odd or Even</strong><p>Server-side rolls and balances.</p></div>
-        <div><span>NEXT</span><strong>Friend leaderboard</strong><p>See who is Bux-rich.</p></div>
-        <div><span>LATER</span><strong>More weird games</strong><p>Built one bad idea at a time.</p></div>
-      </section>
-
-      {profile?.demo && <div className="demo-note">LOCAL DEMO ACCOUNT · Production accounts use sign-in</div>}
-      <footer><span>BFNRY.COM</span><p>Built for fun. Bux are fictional and cannot be purchased or redeemed.</p></footer>
     </main>
   );
 }
