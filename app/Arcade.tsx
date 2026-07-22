@@ -60,28 +60,27 @@ export function Arcade() {
       <div className="sky-bubble bubble-two" aria-hidden="true" />
 
       <header className="topbar">
-        <a className="logo" href="#top" aria-label="BFNRY home">BFNRY</a>
-        <p>the happy little internet arcade</p>
+        <div className="window-controls" aria-hidden="true"><i /><i /><i /></div>
+        <a className="logo" href="#top" aria-label="BFNRY home"><span>●</span> BFNRY Arcade</a>
+        <nav aria-label="Main navigation"><a href="#top">Home</a><a href="#play">Games</a><a href="#player">My Bux</a></nav>
+        <p className="online"><span /> ONLINE</p>
       </header>
 
       <section className="hero" id="top">
-        <div className="sun" aria-hidden="true" />
-        <div className="cloud cloud-one" aria-hidden="true" />
-        <div className="cloud cloud-two" aria-hidden="true" />
         <div className="hero-copy">
-          <p className="kicker">WELCOME TO YOUR FRESH CORNER OF THE WEB</p>
-          <h1>Good vibes.<br />Tiny games.</h1>
-          <p>Pick a side, roll the number, and grow your totally fictional fortune.</p>
-          <a className="start-link" href="#play">Start playing</a>
+          <div className="hero-panel">
+            <p className="kicker">★ WELCOME, INTERNET EXPLORER ★</p>
+            <h1>Good vibes.<br />Tiny games.</h1>
+            <p>Pick a side, roll the number, and grow your totally fictional fortune.</p>
+            <a className="start-link" href="#play">▶ Start playing</a>
+          </div>
+          <div className="hero-stickers" aria-hidden="true"><span>WEB<br />2.0</span><span>100%<br />FRESH</span></div>
         </div>
-        <div className="landscape" aria-hidden="true">
-          <div className="hill hill-back" />
-          <div className="hill hill-front" />
-          <div className="pond" />
-        </div>
+        <div className="sparkle sparkle-one" aria-hidden="true">✦</div>
+        <div className="sparkle sparkle-two" aria-hidden="true">✦</div>
       </section>
 
-      <section className="account-card glass-card" aria-labelledby="account-heading">
+      <section className="account-card glass-card" id="player" aria-labelledby="account-heading">
         <div className="avatar" aria-hidden="true">B</div>
         <div>
           <p className="eyebrow" id="account-heading">YOUR PLAYER</p>
@@ -97,6 +96,7 @@ export function Arcade() {
       </section>
 
       <section className="game-section" id="play" aria-labelledby="game-heading">
+        <div className="aero-ribbon"><span>BFNRY GAME CENTER</span><span>Help &amp; Support</span></div>
         <div className="section-intro">
           <p className="eyebrow">GAME 001</p>
           <h2 id="game-heading">Odd or Even?</h2>
@@ -104,6 +104,7 @@ export function Arcade() {
         </div>
 
         <div className="game-console glass-card">
+          <div className="console-titlebar"><span>Odd or Even.exe</span><span>_ □ ×</span></div>
           <fieldset className="choice-fieldset" disabled={!profile || playing}>
             <legend>Choose your side</legend>
             <label className={choice === "odd" ? "choice active" : "choice"}>
@@ -133,7 +134,7 @@ export function Arcade() {
         {gameError && <p className="error notice" role="alert">Game error: {gameError}</p>}
       </section>
 
-      <footer><strong>BFNRY</strong><p>Bux are fictional. Fresh air is encouraged.</p></footer>
+      <footer><strong>BFNRY 2007</strong><p>Bux are fictional. Fresh air is encouraged.</p><span>Best viewed at 1024 × 768</span></footer>
     </main>
   );
 }
