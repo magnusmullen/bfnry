@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFile } from "node:fs/promises";
 import { evaluateLuckyBonus, evaluateSlotGrid, symbolFromRandom } from "../app/slots.ts";
 
 test("LUCKY substitutes for the best regular symbol on a payline", () => {
@@ -28,4 +29,11 @@ test("Lucky bonuses escalate at three, four, and five symbols", () => {
   assert.deepEqual(evaluateLuckyBonus(gridWith(3), 10), { count: 3, tier: "BIG BONUS", multiplier: 15, payout: 150 });
   assert.deepEqual(evaluateLuckyBonus(gridWith(4), 10), { count: 4, tier: "SUPER BONUS", multiplier: 50, payout: 500 });
   assert.deepEqual(evaluateLuckyBonus(gridWith(5), 10), { count: 5, tier: "BUFFOON BONUS", multiplier: 150, payout: 1500 });
+});
+
+test("bet controls use explicit mobile-safe buttons and functional updates", async () => {
+  const arcade = await readFile(new URL("../app/Arcade.tsx", import.meta.url), "utf8");
+  assert.match(arcade, /type="button" onClick=\{\(\) => \{ setBet\(\(current\) => Math\.max\(5, current - 5\)\)/);
+  assert.match(arcade, /type="button" onClick=\{\(\) => \{ setBet\(\(current\) => Math\.min\(100, current \+ 5\)\)/);
+  assert.match(arcade, /new AudioContextClass\(\)/);
 });

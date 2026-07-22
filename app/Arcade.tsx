@@ -74,6 +74,7 @@ function PaylineCanvas({ wins }: { wins: SlotWin[] }) {
 }
 
 export function Arcade() {
+  const audioContextRef = useRef<AudioContext | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [game, setGame] = useState<"slots" | "odd">("slots");
   const [choice, setChoice] = useState<"odd" | "even">("odd");
@@ -92,6 +93,32 @@ export function Arcade() {
   const [redeemState, setRedeemState] = useState<"idle" | "redeeming" | "redeemed">("idle");
   const [redeemMessage, setRedeemMessage] = useState("");
 
+  function playTone(frequency: number, duration = .08, delay = 0, wave: OscillatorType = "sine", volume = .045) {
+    const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const context = audioContextRef.current ?? new AudioContextClass();
+    audioContextRef.current = context;
+    if (context.state === "suspended") void context.resume();
+    const startsAt = context.currentTime + delay;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = wave; oscillator.frequency.setValueAtTime(frequency, startsAt);
+    gain.gain.setValueAtTime(volume, startsAt); gain.gain.exponentialRampToValueAtTime(.0001, startsAt + duration);
+    oscillator.connect(gain); gain.connect(context.destination);
+    oscillator.start(startsAt); oscillator.stop(startsAt + duration);
+  }
+
+  function playResultSound(result: SlotsResult) {
+    if (result.luckyBonus) {
+      const notes = result.luckyBonus.count >= 5 ? [392, 523, 659, 784, 1047] : result.luckyBonus.count === 4 ? [392, 523, 659, 880] : [392, 523, 784];
+      notes.forEach((frequency, index) => playTone(frequency, .24, index * .1, "triangle", .065));
+    } else if (result.payout > 0) {
+      [523, 659, 784].forEach((frequency, index) => playTone(frequency, .15, index * .08, "sine", .05));
+    } else {
+      playTone(180, .18, 0, "triangle", .035);
+    }
+  }
+
   const loadAccount = useCallback(async () => {
     setLoading(true); setAccountError("");
     try {
@@ -109,6 +136,7 @@ export function Arcade() {
     finally { setPlaying(false); }
   }
   async function spin() {
+    playTone(260, .08, 0, "square", .025); playTone(390, .1, .07, "square", .025);
     setPlaying(true); setStoppedReels(0); setGameError(""); setSlotsResult(null);
     const startedAt = Date.now();
     let targetGrid: SlotGrid | null = null;
@@ -128,12 +156,13 @@ export function Arcade() {
       for (let reel = 0; reel < 5; reel++) {
         await new Promise((resolve) => window.setTimeout(resolve, reel === 0 ? 120 : 190));
         lockedReels = reel + 1;
+        playTone(170 + reel * 32, .07, 0, "square", .035);
         setStoppedReels(lockedReels);
         setGrid((current) => current.map((row, rowIndex) => row.map((symbol, reelIndex) =>
           reelIndex <= reel ? next.grid[rowIndex][reelIndex] : symbol
         )) as SlotGrid);
       }
-      setGrid(next.grid); setSlotsResult(next); setProfile(next);
+      setGrid(next.grid); setSlotsResult(next); setProfile(next); playResultSound(next);
     } catch (error) { setGameError(error instanceof Error ? error.message : "The reels got stuck"); }
     finally { window.clearInterval(ticker); setStoppedReels(5); setPlaying(false); }
   }
@@ -166,7 +195,7 @@ export function Arcade() {
           <div className="slot-grid">{grid.map((row, rowIndex) => row.map((symbol, reelIndex) => <div className={`slot-cell ${symbol === "LUCKY" ? "lucky" : ""} ${playing && reelIndex >= stoppedReels ? "reel-spinning" : "reel-stopped"}`} key={`${rowIndex}-${reelIndex}`}><img src={`/slots/${symbol}.png`} alt={playing && reelIndex >= stoppedReels ? "Spinning reel" : symbol} /></div>))}</div>
           {slotsResult?.wins.length ? <PaylineCanvas wins={slotsResult.wins} /> : null}
         </div>
-        <div className="bet-bar"><span>BET</span><button onClick={() => setBet(Math.max(5, bet - 5))} disabled={playing || bet <= 5} aria-label="Decrease bet">−</button><strong>{bet} <small>Suds</small></strong><button onClick={() => setBet(Math.min(100, bet + 5))} disabled={playing || bet >= 100} aria-label="Increase bet">+</button></div>
+        <div className="bet-bar"><span>BET</span><button type="button" onClick={() => { setBet((current) => Math.max(5, current - 5)); playTone(360, .06, 0, "sine", .035); }} disabled={playing || bet <= 5} aria-label="Decrease bet">−</button><strong>{bet} <small>Suds</small></strong><button type="button" onClick={() => { setBet((current) => Math.min(100, current + 5)); playTone(520, .06, 0, "sine", .035); }} disabled={playing || bet >= 100} aria-label="Increase bet">+</button></div>
         <button className="roll slot-spin" type="button" onClick={() => void spin()} disabled={playing || !canPlay}><span>{playing ? "Spinning…" : `Spin for ${bet} Suds`}</span><b>›</b></button>
         {slotsResult && <div className={`slot-summary ${slotsResult.payout ? "won" : "lost"} ${slotsResult.luckyBonus ? "lucky-win" : ""}`} aria-live="polite">{slotsResult.luckyBonus && <div className="lucky-bonus"><small>{slotsResult.luckyBonus.count} LUCKIES</small><strong>{slotsResult.luckyBonus.tier}!</strong><span>{slotsResult.luckyBonus.multiplier}× BET · +{slotsResult.luckyBonus.payout} SUDS</span></div>}<div><small>{slotsResult.payout ? "TOTAL WIN" : "NO LINE WIN"}</small><strong>{slotsResult.payout ? `${slotsResult.payout} Suds` : "Try again"}</strong><span>{slotsResult.delta >= 0 ? "+" : ""}{slotsResult.delta} net · {slotsResult.balance} remaining</span></div>{slotsResult.wins.length > 0 && <div className="win-list">{slotsResult.wins.map((win, i) => <div className="win-chip" style={{ "--line-color": LINE_COLORS[i % LINE_COLORS.length] } as React.CSSProperties} key={win.line}><b>LINE {win.line}</b><span>{win.symbol} × {win.count}</span><strong>{win.multiplier}×</strong><em>+{win.payout}</em></div>)}</div>}</div>}
         {!slotsResult && <p className="pay-hint">Each winning line has its own multiplier and payout.</p>}
