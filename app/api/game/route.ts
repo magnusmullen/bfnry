@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   const now = new Date().toISOString();
   await env.DB.prepare("INSERT OR IGNORE INTO players (email, display_name, balance, created_at, updated_at) VALUES (?, ?, 100, ?, ?)").bind(email, displayName, now, now).run();
   const current = await env.DB.prepare("SELECT balance FROM players WHERE email = ?").bind(email).first<{ balance: number }>();
-  if (!current || current.balance < 10) return Response.json({ error: "Not enough Bux" }, { status: 409 });
+  if (!current || current.balance < 10) return Response.json({ error: "Not enough Suds" }, { status: 409 });
   const roll = crypto.getRandomValues(new Uint32Array(1))[0] % 100 + 1;
   const won = (roll % 2 === 0 ? "even" : "odd") === body.choice;
   const delta = won ? 10 : -10;
