@@ -33,7 +33,9 @@ export function Arcade() {
     }
   }, []);
 
-  useEffect(() => { void loadAccount(); }, [loadAccount]);
+  useEffect(() => {
+    void loadAccount();
+  }, [loadAccount]);
 
   async function play() {
     setPlaying(true);
@@ -55,86 +57,70 @@ export function Arcade() {
   }
 
   return (
-    <main className="site-shell">
-      <div className="sky-bubble bubble-one" aria-hidden="true" />
-      <div className="sky-bubble bubble-two" aria-hidden="true" />
+    <main>
+      <h1>BFNRY</h1>
 
-      <header className="topbar">
-        <div className="window-controls" aria-hidden="true"><i /><i /><i /></div>
-        <a className="logo" href="#top" aria-label="BFNRY home"><span>●</span> BFNRY Arcade</a>
-        <nav aria-label="Main navigation"><a href="#top">Home</a><a href="#play">Games</a><a href="#player">My Bux</a></nav>
-        <p className="online"><span /> ONLINE</p>
-      </header>
-
-      <section className="hero" id="top">
-        <div className="hero-copy">
-          <div className="hero-panel">
-            <p className="kicker">★ WELCOME, INTERNET EXPLORER ★</p>
-            <h1>Good vibes.<br />Tiny games.</h1>
-            <p>Pick a side, roll the number, and grow your totally fictional fortune.</p>
-            <a className="start-link" href="#play">▶ Start playing</a>
-          </div>
-          <div className="hero-stickers" aria-hidden="true"><span>WEB<br />2.0</span><span>100%<br />FRESH</span></div>
-        </div>
-        <div className="sparkle sparkle-one" aria-hidden="true">✦</div>
-        <div className="sparkle sparkle-two" aria-hidden="true">✦</div>
-      </section>
-
-      <section className="account-card glass-card" id="player" aria-labelledby="account-heading">
-        <div className="avatar" aria-hidden="true">B</div>
-        <div>
-          <p className="eyebrow" id="account-heading">YOUR PLAYER</p>
-          {loading && <p className="account-value">Loading player...</p>}
-          {!loading && profile && <p className="account-value">{profile.displayName} <span>•</span> {profile.balance} Bux</p>}
-        </div>
+      <section aria-labelledby="account-heading">
+        <h2 id="account-heading">Player</h2>
+        {loading && <p>Loading player...</p>}
+        {!loading && profile && (
+          <p>{profile.displayName} — {profile.balance} Bux</p>
+        )}
         {accountError && (
-          <div className="error" role="alert">
+          <div role="alert">
             <p>Player error: {accountError}</p>
             <button type="button" onClick={() => void loadAccount()}>Try again</button>
           </div>
         )}
       </section>
 
-      <section className="game-section" id="play" aria-labelledby="game-heading">
-        <div className="aero-ribbon"><span>BFNRY GAME CENTER</span><span>Help &amp; Support</span></div>
-        <div className="section-intro">
-          <p className="eyebrow">GAME 001</p>
-          <h2 id="game-heading">Odd or Even?</h2>
-          <p>Choose a side. Win 10 Bux if you call it right. Lose 10 if the number has other plans.</p>
-        </div>
+      <section aria-labelledby="game-heading">
+        <h2 id="game-heading">Odd or Even</h2>
+        <p>Choose odd or even. A win earns 10 Bux and a loss costs 10 Bux.</p>
 
-        <div className="game-console glass-card">
-          <div className="console-titlebar"><span>Odd or Even.exe</span><span>_ □ ×</span></div>
-          <fieldset className="choice-fieldset" disabled={!profile || playing}>
-            <legend>Choose your side</legend>
-            <label className={choice === "odd" ? "choice active" : "choice"}>
-              <input type="radio" name="choice" value="odd" checked={choice === "odd"} onChange={() => setChoice("odd")} />
-              <span className="choice-number">01</span><strong>ODD</strong><small>1, 3, 5, 7...</small>
-            </label>
-            <label className={choice === "even" ? "choice active" : "choice"}>
-              <input type="radio" name="choice" value="even" checked={choice === "even"} onChange={() => setChoice("even")} />
-              <span className="choice-number">02</span><strong>EVEN</strong><small>2, 4, 6, 8...</small>
-            </label>
-          </fieldset>
+        <fieldset disabled={!profile || playing}>
+          <legend>Your choice</legend>
+          <label>
+            <input
+              type="radio"
+              name="choice"
+              value="odd"
+              checked={choice === "odd"}
+              onChange={() => setChoice("odd")}
+            />
+            Odd
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="choice"
+              value="even"
+              checked={choice === "even"}
+              onChange={() => setChoice("even")}
+            />
+            Even
+          </label>
+        </fieldset>
 
-          <div className={`result-panel ${result ? (result.won ? "result-win" : "result-loss") : ""}`} aria-live="polite">
-            {result ? (
-              <><p className="result-label">{result.won ? "YOU WON!" : "SO CLOSE!"}</p><strong className="roll-number">{result.roll}</strong><p>{result.delta > 0 ? "+" : ""}{result.delta} Bux</p><p>New balance: {result.balance} Bux</p></>
-            ) : (
-              <><p className="result-label">THE NUMBER AWAITS</p><strong className="roll-number">?</strong><p>Your result will appear here.</p></>
-            )}
+        <button
+          type="button"
+          onClick={() => void play()}
+          disabled={playing || !profile || profile.balance < 10}
+        >
+          {playing ? "Rolling..." : "Roll"}
+        </button>
+
+        {profile && profile.balance < 10 && <p>You need at least 10 Bux to play.</p>}
+        {gameError && <p role="alert">Game error: {gameError}</p>}
+        {result && (
+          <div aria-live="polite">
+            <h3>{result.won ? "You won" : "You lost"}</h3>
+            <p>Roll: {result.roll}</p>
+            <p>Change: {result.delta > 0 ? "+" : ""}{result.delta} Bux</p>
+            <p>Balance: {result.balance} Bux</p>
           </div>
-
-          <button className="roll-button" type="button" onClick={() => void play()} disabled={playing || !profile || profile.balance < 10}>
-            {playing ? "Rolling..." : `Roll ${choice}`}
-          </button>
-        </div>
-
-        {profile && profile.balance < 10 && <p className="notice">You need at least 10 Bux to play.</p>}
-        {gameError && <p className="error notice" role="alert">Game error: {gameError}</p>}
+        )}
       </section>
-
-      <footer><strong>BFNRY 2007</strong><p>Bux are fictional. Fresh air is encouraged.</p><span>Best viewed at 1024 × 768</span></footer>
     </main>
   );
 }
