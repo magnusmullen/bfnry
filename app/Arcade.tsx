@@ -97,7 +97,6 @@ export function Arcade() {
     try {
       const next = await readJson<Profile>(await fetch("/api/account", { cache: "no-store" })); setProfile(next);
       if (next.bonusClaimed) { setBonusState("claimed"); setBonusMessage("Collected"); }
-      if (next.promoClaimed) { setRedeemState("redeemed"); setRedeemMessage("Code already redeemed"); }
     } catch (error) { setAccountError(error instanceof Error ? error.message : "Could not load player"); }
     finally { setLoading(false); }
   }, []);
@@ -145,8 +144,9 @@ export function Arcade() {
   }
   async function redeemCode(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!code.trim() || redeemState !== "idle") return; setRedeemState("redeeming"); setRedeemMessage("");
-    try { const next = await readJson<Profile & { awarded: boolean }>(await fetch("/api/redeem", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code }) })); setProfile(next); setRedeemState("redeemed"); setRedeemMessage(next.awarded ? "+100 Suds added" : "Code already redeemed"); }
-    catch (error) { setRedeemState("idle"); setRedeemMessage(error instanceof Error ? error.message : "That code didn’t work"); }
+    try { const next = await readJson<Profile & { awarded: boolean; reward: number }>(await fetch("/api/redeem", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code }) })); setProfile(next); setCode(""); setRedeemMessage(next.awarded ? `+${next.reward} Suds added` : "Code already redeemed"); }
+    catch (error) { setRedeemMessage(error instanceof Error ? error.message : "That code didn’t work"); }
+    finally { setRedeemState("idle"); }
   }
   const canPlay = !!profile && profile.balance >= (game === "slots" ? bet : 10);
 
@@ -176,6 +176,6 @@ export function Arcade() {
     </section>
     {loading && <p className="message">Finding your place…</p>}{accountError && <div className="message error" role="alert">Couldn’t find your player. <button onClick={() => void loadAccount()}>Try again</button></div>}
     <section className="pulse" id="pulse"><span><i /> Everything feels clear</span><span>1 Thessalonians 5:16</span><span>&quot;Rejoice always.&quot;</span></section><section className="about" id="about"><article><span className="mini-orb">○</span><div><small>THIS SITE</small><h3>For fun, nothing serious</h3><p>This site is just for me to build cool things, mostly vibe coded.</p></div></article><article><span className="mini-orb blue">◇</span><div><small>AND SO?</small><h3>More ways to play</h3><p>Try the new 20-line slots, then switch back to the original game anytime.</p></div></article></section>
-    <form className="code-entry" onSubmit={(event) => void redeemCode(event)}><label htmlFor="secret-code">Have a code?</label><div><input id="secret-code" value={code} onChange={(event) => setCode(event.target.value)} placeholder="Enter it here" autoComplete="off" disabled={redeemState !== "idle"} /><button type="submit" disabled={!code.trim() || redeemState !== "idle"}>{redeemState === "redeeming" ? "Checking…" : redeemState === "redeemed" ? "Redeemed" : "Redeem"}</button></div><p aria-live="polite">{redeemMessage}</p></form><footer><a className="brand" href="#top"><span className="brand-mark"><b /></span><span><strong>BFNRY</strong><small>Whimsy online</small></span></a><p>IT&apos;S JOHN MARSTON, MICAH!</p><div><a href="#play">Play</a><a href="#about">About</a></div></footer>
+    <form className="code-entry" onSubmit={(event) => void redeemCode(event)}><label htmlFor="secret-code">Have a code?</label><div><input id="secret-code" value={code} onChange={(event) => setCode(event.target.value)} placeholder="Enter it here" autoComplete="off" disabled={redeemState !== "idle"} /><button type="submit" disabled={!code.trim() || redeemState !== "idle"}>{redeemState === "redeeming" ? "Checking…" : "Redeem"}</button></div><p aria-live="polite">{redeemMessage}</p></form><footer><a className="brand" href="#top"><span className="brand-mark"><b /></span><span><strong>BFNRY</strong><small>Whimsy online</small></span></a><p>IT&apos;S JOHN MARSTON, MICAH!</p><div><a href="#play">Play</a><a href="#about">About</a></div></footer>
   </main>;
 }

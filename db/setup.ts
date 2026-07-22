@@ -33,6 +33,12 @@ async function initialize() {
       code TEXT NOT NULL,
       created_at TEXT NOT NULL
     )`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS promo_code_claims (
+      player_email TEXT NOT NULL,
+      code TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      PRIMARY KEY (player_email, code)
+    )`),
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS slot_results (
       id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
       player_email TEXT NOT NULL,

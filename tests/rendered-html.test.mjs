@@ -36,3 +36,11 @@ test("renders a bare-bones account and odd-or-even interface", async () => {
   assert.doesNotMatch(arcade, /account-pill|orb-one|roadmap|className=/);
   assert.doesNotMatch(css, /\{[^}]*:[^}]*\}/);
 });
+
+test("defines promo-code rewards and repeatability", async () => {
+  const redeem = await readFile(new URL("app/api/redeem/route.ts", root), "utf8");
+
+  assert.match(redeem, /"muertos rojos": \{ reward: 175, repeatable: false \}/);
+  assert.match(redeem, /"for god so loved the world": \{ reward: 190, repeatable: true \}/);
+  assert.match(redeem, /balance = balance \+ \?/);
+});
