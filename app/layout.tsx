@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "BFNRY — the group chat arcade",
-  description: "Tiny games, fictional Bux, and bragging rights for friends.",
+  title: "BFNRY — Good vibes. Tiny games.",
+  description: "A bright little internet arcade for Odd or Even and fictional Bux.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

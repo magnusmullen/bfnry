@@ -21,7 +21,7 @@ test("uses a persistent guest player when no authenticated user is available", a
   assert.doesNotMatch(game, /Sign in required/);
 });
 
-test("renders a bare-bones account and odd-or-even interface", async () => {
+test("renders the account and odd-or-even interface", async () => {
   const [arcade, css] = await Promise.all([
     readFile(new URL("app/Arcade.tsx", root), "utf8"),
     readFile(new URL("app/globals.css", root), "utf8"),
@@ -33,6 +33,9 @@ test("renders a bare-bones account and odd-or-even interface", async () => {
   assert.match(arcade, /value="odd"/);
   assert.match(arcade, /value="even"/);
   assert.match(arcade, /Game error:/);
-  assert.doesNotMatch(arcade, /account-pill|orb-one|roadmap|className=/);
-  assert.doesNotMatch(css, /\{[^}]*:[^}]*\}/);
+  assert.match(arcade, /className="game-console glass-card"/);
+  assert.match(arcade, /Good vibes/);
+  assert.match(css, /--sky:\s*#65c9ff/);
+  assert.match(css, /linear-gradient/);
+  assert.match(css, /backdrop-filter:\s*blur/);
 });
