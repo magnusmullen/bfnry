@@ -52,3 +52,15 @@ test("Lucky tiles trigger a landing effect when their reel locks", async () => {
   assert.match(css, /@keyframes lucky-word-punch/);
   assert.match(css, /prefers-reduced-motion:reduce/);
 });
+
+test("Lucky landings pause later reels and two Luckies add suspense", async () => {
+  const [arcade, css] = await Promise.all([
+    readFile(new URL("../app/Arcade.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/slots.css", import.meta.url), "utf8"),
+  ]);
+  assert.match(arcade, /luckyCountRef\.current >= 2 \? 1700 : 1150/);
+  assert.match(arcade, /playSuspenseSound\(luckyCountRef\.current, suspenseDelay\)/);
+  assert.match(arcade, /await new Promise\(\(resolve\) => window\.setTimeout\(resolve, suspenseDelay\)\)/);
+  assert.match(arcade, /Hold your breath…/);
+  assert.match(css, /@keyframes suspense-machine-pulse/);
+});

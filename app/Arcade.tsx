@@ -90,6 +90,7 @@ export function Arcade() {
   const [stoppedReels, setStoppedReels] = useState(5);
   const [luckyLandings, setLuckyLandings] = useState<Record<string, number>>({});
   const [luckyImpact, setLuckyImpact] = useState({ token: 0, level: 0 });
+  const [suspenseLevel, setSuspenseLevel] = useState(0);
   const [bonusState, setBonusState] = useState<"idle" | "claiming" | "claimed">("idle");
   const [bonusMessage, setBonusMessage] = useState("");
   const [code, setCode] = useState("");
@@ -132,6 +133,17 @@ export function Arcade() {
     if (luckyNumber >= 3) [1, 1.5, 2, 3].forEach((ratio, index) => playTone(root * ratio, .55, .2 + index * .035, "triangle", .045));
   }
 
+  function playSuspenseSound(luckyCount: number, duration: number) {
+    const beats = Math.max(4, Math.floor(duration / 190));
+    for (let beat = 0; beat < beats; beat++) {
+      const delay = beat * duration / beats / 1000;
+      const climb = 1 + beat / beats * .42 + (luckyCount - 2) * .08;
+      playTone(92 * climb, .12, delay, "sine", .052);
+      playTone(184 * climb, .09, delay + .035, "triangle", .024);
+    }
+    playTone(440 * (1 + luckyCount * .08), .18, Math.max(0, duration / 1000 - .16), "sawtooth", .028);
+  }
+
   const loadAccount = useCallback(async () => {
     setLoading(true); setAccountError("");
     try {
@@ -151,7 +163,7 @@ export function Arcade() {
   async function spin() {
     playTone(260, .08, 0, "square", .025); playTone(390, .1, .07, "square", .025);
     luckyCountRef.current = 0;
-    setPlaying(true); setStoppedReels(0); setLuckyLandings({}); setLuckyImpact({ token: 0, level: 0 }); setGameError(""); setSlotsResult(null);
+    setPlaying(true); setStoppedReels(0); setLuckyLandings({}); setLuckyImpact({ token: 0, level: 0 }); setSuspenseLevel(0); setGameError(""); setSlotsResult(null);
     const startedAt = Date.now();
     let targetGrid: SlotGrid | null = null;
     let lockedReels = 0;
@@ -187,6 +199,13 @@ export function Arcade() {
         setGrid((current) => current.map((row, rowIndex) => row.map((symbol, reelIndex) =>
           reelIndex <= reel ? next.grid[rowIndex][reelIndex] : symbol
         )) as SlotGrid);
+        if (reel < 4 && luckyCountRef.current > 0) {
+          const suspenseDelay = luckyCountRef.current >= 2 ? 1700 : 1150;
+          setSuspenseLevel(luckyCountRef.current);
+          if (luckyCountRef.current >= 2) playSuspenseSound(luckyCountRef.current, suspenseDelay);
+          await new Promise((resolve) => window.setTimeout(resolve, suspenseDelay));
+          setSuspenseLevel(0);
+        }
       }
       setGrid(next.grid); setSlotsResult(next); setProfile(next); playResultSound(next);
     } catch (error) { setGameError(error instanceof Error ? error.message : "The reels got stuck"); }
@@ -216,10 +235,11 @@ export function Arcade() {
       <div className="game-intro"><span className="game-orb" aria-hidden="true"><b>{game === "slots" ? "5" : "?"}</b></span><p className="overline">NOW PLAYING</p><h2 id="game-heading">{game === "slots" ? "Suds & Symbols" : "Odd or Even"}</h2><p>{game === "slots" ? `Match 3–5 symbols from the left across any of ${PAYLINES.length} natural paylines. Every unique winning line pays.` : "Choose a side. We’ll roll the number and see what you get! Best of luck hehe! :)"}</p><div className="rules">{game === "slots" ? <><span><small>MIN BET</small>5 Suds</span><span><small>LINES</small>{PAYLINES.length} active</span><span><small>LUCKY</small>Wild + bonus</span></> : <><span><small>PLAY</small>10 Suds</span><span><small>WIN</small>+10 Suds</span><span><small>CHANCE</small>50 / 50</span></>}</div><div className="soft-note"><span>i</span><p>{game === "slots" ? "LUCKY is wild. Find 3 anywhere for a big bonus, 4 for super, or 5+ for buffoon." : "This is the first game made on this website!"}</p></div></div>
 
       {game === "slots" ? <div className="game-stage slot-stage">
-        <div className="stage-head"><span>{PAYLINES.length} ways to make a splash</span><span>{slotsResult ? `${slotsResult.wins.length} line${slotsResult.wins.length === 1 ? "" : "s"} hit` : "Ready"}</span></div>
-        <div className={`slot-machine ${playing ? "spinning" : ""}`} aria-label="Three row by five reel slot result">
+        <div className="stage-head"><span>{PAYLINES.length} ways to make a splash</span><span>{suspenseLevel >= 2 ? "Hold your breath…" : slotsResult ? `${slotsResult.wins.length} line${slotsResult.wins.length === 1 ? "" : "s"} hit` : "Ready"}</span></div>
+        <div className={`slot-machine ${playing ? "spinning" : ""} ${suspenseLevel >= 2 ? "lucky-suspense" : ""}`} aria-label="Three row by five reel slot result">
           <div className="slot-grid">{grid.map((row, rowIndex) => row.map((symbol, reelIndex) => { const cellKey = `${rowIndex}-${reelIndex}`; const luckyNumber = luckyLandings[cellKey]; return <div className={`slot-cell ${symbol === "LUCKY" ? "lucky" : ""} ${luckyNumber ? `lucky-landed lucky-level-${Math.min(luckyNumber, 5)}` : ""} ${playing && reelIndex >= stoppedReels ? "reel-spinning" : "reel-stopped"}`} key={cellKey}><img src={`/slots/${symbol}.png`} alt={playing && reelIndex >= stoppedReels ? "Spinning reel" : symbol} />{luckyNumber && <i className="lucky-starfield" aria-hidden="true" />}</div>; }))}</div>
           {luckyImpact.level > 0 && <div className={`lucky-screen-hit lucky-screen-level-${Math.min(luckyImpact.level, 5)}`} key={luckyImpact.token} aria-hidden="true"><b>LUCKY!</b><span>#{luckyImpact.level}</span></div>}
+          {suspenseLevel >= 2 && <div className="suspense-vignette" aria-hidden="true"><span>{suspenseLevel} LUCKIES…</span></div>}
           {slotsResult?.wins.length ? <PaylineCanvas wins={slotsResult.wins} /> : null}
         </div>
         <div className="bet-bar"><span>BET</span><button type="button" onClick={() => { setBet((current) => Math.max(5, current - 5)); playTone(360, .06, 0, "sine", .035); }} disabled={playing || bet <= 5} aria-label="Decrease bet">−</button><strong>{bet} <small>Suds</small></strong><button type="button" onClick={() => { setBet((current) => Math.min(100, current + 5)); playTone(520, .06, 0, "sine", .035); }} disabled={playing || bet >= 100} aria-label="Increase bet">+</button></div>
