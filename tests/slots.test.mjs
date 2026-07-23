@@ -45,7 +45,7 @@ test("Lucky tiles trigger a landing effect when their reel locks", async () => {
   ]);
   assert.match(arcade, /playLuckyHit\(luckyNumber\)/);
   assert.match(arcade, /luckyCountRef\.current \+= landedLuckies\.length/);
-  assert.match(arcade, /lucky-screen-hit/);
+  assert.match(arcade, /lucky-float-callout/);
   assert.match(css, /@keyframes lucky-impact/);
   assert.match(css, /@keyframes lucky-ring/);
   assert.match(css, /@keyframes lucky-screen-flash/);
@@ -58,9 +58,21 @@ test("Lucky landings pause later reels and two Luckies add suspense", async () =
     readFile(new URL("../app/Arcade.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/slots.css", import.meta.url), "utf8"),
   ]);
-  assert.match(arcade, /luckyCountRef\.current >= 2 \? 1700 : 1150/);
+  assert.match(arcade, /luckyCountRef\.current >= 2 \? 1700 : 350/);
   assert.match(arcade, /playSuspenseSound\(luckyCountRef\.current, suspenseDelay\)/);
   assert.match(arcade, /await new Promise\(\(resolve\) => window\.setTimeout\(resolve, suspenseDelay\)\)/);
   assert.match(arcade, /Hold your breath…/);
   assert.match(css, /@keyframes suspense-machine-pulse/);
+});
+
+test("Lucky art is enlarged and each landing gets a varied floating message", async () => {
+  const [arcade, css] = await Promise.all([
+    readFile(new URL("../app/Arcade.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/slots.css", import.meta.url), "utf8"),
+  ]);
+  assert.match(arcade, /14 \+ Math\.random\(\) \* 72/);
+  assert.match(arcade, /OH, LUCKY YOU!/);
+  assert.match(arcade, /ABSOLUTE BUFFOONERY!/);
+  assert.match(css, /\.slot-cell\.lucky img\{[^}]*transform:scale\(1\.55\)/);
+  assert.match(css, /@keyframes lucky-callout-float/);
 });

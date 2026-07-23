@@ -6,6 +6,7 @@ import { PAYLINES, symbolFromRandom, type LuckyBonus, type SlotGrid, type SlotWi
 type Profile = { displayName: string; balance: number; demo: boolean; bonusClaimed?: boolean; promoClaimed?: boolean };
 type GameResult = Profile & { roll: number; won: boolean; delta: number };
 type SlotsResult = Profile & { grid: SlotGrid; wins: SlotWin[]; luckyBonus: LuckyBonus | null; payout: number; delta: number; bet: number };
+type LuckyCallout = { id: number; message: string; x: number; y: number; rotation: number; level: number };
 const START_GRID: SlotGrid = [["A", "K", "Q", "J", "10"], ["Q", "J", "10", "A", "K"], ["10", "A", "K", "Q", "J"]];
 const LINE_COLORS = ["#ffe06f", "#ff8fa7", "#80f0dd", "#9db7ff", "#f7a9ff"];
 
@@ -76,6 +77,7 @@ function PaylineCanvas({ wins }: { wins: SlotWin[] }) {
 export function Arcade() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const luckyCountRef = useRef(0);
+  const luckyCalloutIdRef = useRef(0);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [game, setGame] = useState<"slots" | "odd">("slots");
   const [choice, setChoice] = useState<"odd" | "even">("odd");
@@ -90,6 +92,7 @@ export function Arcade() {
   const [stoppedReels, setStoppedReels] = useState(5);
   const [luckyLandings, setLuckyLandings] = useState<Record<string, number>>({});
   const [luckyImpact, setLuckyImpact] = useState({ token: 0, level: 0 });
+  const [luckyCallouts, setLuckyCallouts] = useState<LuckyCallout[]>([]);
   const [suspenseLevel, setSuspenseLevel] = useState(0);
   const [bonusState, setBonusState] = useState<"idle" | "claiming" | "claimed">("idle");
   const [bonusMessage, setBonusMessage] = useState("");
@@ -163,7 +166,7 @@ export function Arcade() {
   async function spin() {
     playTone(260, .08, 0, "square", .025); playTone(390, .1, .07, "square", .025);
     luckyCountRef.current = 0;
-    setPlaying(true); setStoppedReels(0); setLuckyLandings({}); setLuckyImpact({ token: 0, level: 0 }); setSuspenseLevel(0); setGameError(""); setSlotsResult(null);
+    setPlaying(true); setStoppedReels(0); setLuckyLandings({}); setLuckyImpact({ token: 0, level: 0 }); setLuckyCallouts([]); setSuspenseLevel(0); setGameError(""); setSlotsResult(null);
     const startedAt = Date.now();
     let targetGrid: SlotGrid | null = null;
     let lockedReels = 0;
@@ -191,8 +194,14 @@ export function Arcade() {
             additions[cellKey] = luckyNumber;
             playLuckyHit(luckyNumber);
           });
+          const messages = ["OH, LUCKY YOU!", "DOUBLE TROUBLE!", "JACKPOT ENERGY!", "FORTUNE FAVORS YOU!", "ABSOLUTE BUFFOONERY!"];
+          const callouts = landedLuckies.map((_, luckyIndex) => {
+            const level = luckyCountRef.current + luckyIndex + 1;
+            return { id: ++luckyCalloutIdRef.current, message: messages[Math.min(level, messages.length) - 1], x: 14 + Math.random() * 72, y: 12 + Math.random() * 62, rotation: -12 + Math.random() * 24, level };
+          });
           luckyCountRef.current += landedLuckies.length;
           setLuckyLandings((current) => ({ ...current, ...additions }));
+          setLuckyCallouts((current) => [...current, ...callouts]);
           setLuckyImpact((current) => ({ token: current.token + 1, level: luckyCountRef.current }));
         }
         setStoppedReels(lockedReels);
@@ -200,7 +209,7 @@ export function Arcade() {
           reelIndex <= reel ? next.grid[rowIndex][reelIndex] : symbol
         )) as SlotGrid);
         if (reel < 4 && luckyCountRef.current > 0) {
-          const suspenseDelay = luckyCountRef.current >= 2 ? 1700 : 1150;
+          const suspenseDelay = luckyCountRef.current >= 2 ? 1700 : 350;
           setSuspenseLevel(luckyCountRef.current);
           if (luckyCountRef.current >= 2) playSuspenseSound(luckyCountRef.current, suspenseDelay);
           await new Promise((resolve) => window.setTimeout(resolve, suspenseDelay));
@@ -226,6 +235,7 @@ export function Arcade() {
 
   return <main className="site-shell">
     <div className="ambient" aria-hidden="true"><i /><i /><i /><i /><i /></div>
+    {luckyCallouts.map((callout) => <div className={`lucky-float-callout lucky-float-level-${Math.min(callout.level, 5)}`} key={callout.id} style={{ left: `${callout.x}%`, top: `${callout.y}%`, "--callout-rotation": `${callout.rotation}deg` } as React.CSSProperties} aria-hidden="true">{callout.message}</div>)}
     <button className={`bonus-bubble ${bonusState}`} type="button" onClick={() => void claimBonus()} disabled={bonusState !== "idle"} aria-label="Collect 30 bonus Suds"><span>{bonusState === "claiming" ? "…" : bonusState === "claimed" ? "✓" : "+30"}</span><small>{bonusMessage || "Suds"}</small></button>
     <header className="nav-shell"><a className="brand" href="#top" aria-label="BFNRY home"><span className="brand-mark"><b /></span><span><strong>BFNRY</strong><small>Whimsy online</small></span></a><nav aria-label="Primary navigation"><a className="active" href="#play">Play</a><a href="#pulse">Pulse</a><a href="#about">About</a></nav><div className="player-pill" aria-live="polite"><i /><span>{loading ? "Connecting…" : profile?.displayName ?? "Offline"}</span><strong>{profile ? `${profile.balance} Suds` : "—"}</strong></div></header>
     <section className="hero" id="top"><div className="hero-orbit" aria-hidden="true"><span /><span /><span /></div><p className="overline">Buffoonery Inc. Presents</p><h1>buffoonery,<br /><em>on the web</em></h1><p className="hero-copy">Magnus&apos; little haven for all buffoons to enjoy.</p><a className="hero-action" href="#play"><span>Enter the arcade</span><b>↓</b></a></section>
@@ -238,7 +248,7 @@ export function Arcade() {
         <div className="stage-head"><span>{PAYLINES.length} ways to make a splash</span><span>{suspenseLevel >= 2 ? "Hold your breath…" : slotsResult ? `${slotsResult.wins.length} line${slotsResult.wins.length === 1 ? "" : "s"} hit` : "Ready"}</span></div>
         <div className={`slot-machine ${playing ? "spinning" : ""} ${suspenseLevel >= 2 ? "lucky-suspense" : ""}`} aria-label="Three row by five reel slot result">
           <div className="slot-grid">{grid.map((row, rowIndex) => row.map((symbol, reelIndex) => { const cellKey = `${rowIndex}-${reelIndex}`; const luckyNumber = luckyLandings[cellKey]; return <div className={`slot-cell ${symbol === "LUCKY" ? "lucky" : ""} ${luckyNumber ? `lucky-landed lucky-level-${Math.min(luckyNumber, 5)}` : ""} ${playing && reelIndex >= stoppedReels ? "reel-spinning" : "reel-stopped"}`} key={cellKey}><img src={`/slots/${symbol}.png`} alt={playing && reelIndex >= stoppedReels ? "Spinning reel" : symbol} />{luckyNumber && <i className="lucky-starfield" aria-hidden="true" />}</div>; }))}</div>
-          {luckyImpact.level > 0 && <div className={`lucky-screen-hit lucky-screen-level-${Math.min(luckyImpact.level, 5)}`} key={luckyImpact.token} aria-hidden="true"><b>LUCKY!</b><span>#{luckyImpact.level}</span></div>}
+          {luckyImpact.level > 0 && <div className={`lucky-screen-hit lucky-screen-level-${Math.min(luckyImpact.level, 5)}`} key={luckyImpact.token} aria-hidden="true" />}
           {suspenseLevel >= 2 && <div className="suspense-vignette" aria-hidden="true"><span>{suspenseLevel} LUCKIES…</span></div>}
           {slotsResult?.wins.length ? <PaylineCanvas wins={slotsResult.wins} /> : null}
         </div>
