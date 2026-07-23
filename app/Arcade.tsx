@@ -217,7 +217,7 @@ export function Arcade() {
       }
       setGrid(next.grid); setSlotsResult(next); setProfile(next); playResultSound(next);
     } catch (error) { setGameError(error instanceof Error ? error.message : "The reels got stuck"); }
-    finally { window.clearInterval(ticker); setStoppedReels(5); setPlaying(false); }
+    finally { window.clearInterval(ticker); setStoppedReels(5); setLuckyLandings({}); setPlaying(false); }
   }
   async function claimBonus() {
     if (bonusState !== "idle") return; setBonusState("claiming"); setBonusMessage("");

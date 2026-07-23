@@ -51,6 +51,9 @@ test("Lucky tiles trigger a landing effect when their reel locks", async () => {
   assert.match(css, /@keyframes lucky-ring/);
   assert.match(css, /@keyframes lucky-screen-flash/);
   assert.match(css, /@keyframes lucky-word-punch/);
+  assert.match(css, /\.slot-cell\.lucky-landed\{transform:none;animation-name:lucky-cell-glow\}/);
+  assert.match(css, /\.spinning \.slot-cell\.lucky-landed img\{animation:lucky-symbol-pop/);
+  assert.match(arcade, /setLuckyLandings\(\{\}\); setPlaying\(false\)/);
   assert.doesNotMatch(css, /prefers-reduced-motion/);
 });
 
@@ -80,9 +83,9 @@ test("Lucky art is enlarged and each landing gets a varied floating message", as
 test("each Lucky sequence position has its own editable phrase list", () => {
   assert.equal(LUCKY_CALLOUTS.length, 5);
   LUCKY_CALLOUTS.forEach((phrases) => assert.ok(phrases.length >= 3));
-  assert.equal(getLuckyCallout(1, () => 0), "OH, LUCKY YOU!");
-  assert.equal(getLuckyCallout(2, () => 0), "DOUBLE TROUBLE!");
-  assert.equal(getLuckyCallout(99, () => 0), "ABSOLUTE BUFFOONERY!");
+  assert.equal(getLuckyCallout(1, () => 0), LUCKY_CALLOUTS[0][0]);
+  assert.equal(getLuckyCallout(2, () => 0), LUCKY_CALLOUTS[1][0]);
+  assert.equal(getLuckyCallout(99, () => 0), LUCKY_CALLOUTS[4][0]);
 });
 
 test("Lucky effects are loaded and the baseline reels spin more deliberately", async () => {
