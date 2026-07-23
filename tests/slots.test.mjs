@@ -37,3 +37,15 @@ test("bet controls use explicit mobile-safe buttons and functional updates", asy
   assert.match(arcade, /type="button" onClick=\{\(\) => \{ setBet\(\(current\) => Math\.min\(100, current \+ 5\)\)/);
   assert.match(arcade, /new AudioContextClass\(\)/);
 });
+
+test("Lucky tiles trigger a landing effect when their reel locks", async () => {
+  const [arcade, css] = await Promise.all([
+    readFile(new URL("../app/Arcade.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/slots.css", import.meta.url), "utf8"),
+  ]);
+  assert.match(arcade, /setLuckyLandings\(\(current\) => \[\.\.\.current, \.\.\.landedLuckies\]\)/);
+  assert.match(arcade, /luckyLandings\.includes\(cellKey\) \? "lucky-landed"/);
+  assert.match(css, /@keyframes lucky-impact/);
+  assert.match(css, /@keyframes lucky-ring/);
+  assert.match(css, /prefers-reduced-motion:reduce/);
+});
