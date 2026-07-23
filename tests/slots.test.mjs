@@ -105,9 +105,10 @@ test("Lucky effects are loaded and the baseline reels spin more deliberately", a
 });
 
 test("jukebox has an empty-library state and editable local playlist", async () => {
-  const [arcade, jukebox, playlist] = await Promise.all([
+  const [arcade, jukebox, jukeboxCss, playlist] = await Promise.all([
     readFile(new URL("../app/Arcade.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/Jukebox.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/jukebox.css", import.meta.url), "utf8"),
     readFile(new URL("../app/music/playlist.ts", import.meta.url), "utf8"),
   ]);
   assert.match(arcade, /<Jukebox \/>/);
@@ -116,6 +117,7 @@ test("jukebox has an empty-library state and editable local playlist", async () 
   assert.match(jukebox, /type="range"/);
   assert.match(jukebox, /className="jukebox-status"/);
   assert.doesNotMatch(jukebox, /<footer>/);
+  assert.match(jukeboxCss, /\.jukebox\{display:none\}/);
   assert.match(playlist, /export const MUSIC_TRACKS/);
   assert.match(playlist, /new URL\("\.\/ocean-dream\.mp3", import\.meta\.url\)\.href/);
 });
