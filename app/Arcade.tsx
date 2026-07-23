@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getLuckyCallout } from "./lucky-callouts";
 import { PAYLINES, symbolFromRandom, type LuckyBonus, type SlotGrid, type SlotWin } from "./slots";
 
 type Profile = { displayName: string; balance: number; demo: boolean; bonusClaimed?: boolean; promoClaimed?: boolean };
@@ -193,10 +194,9 @@ export function Arcade() {
             additions[cellKey] = luckyNumber;
             playLuckyHit(luckyNumber);
           });
-          const messages = ["OH, LUCKY YOU!", "DOUBLE TROUBLE!", "JACKPOT ENERGY!", "FORTUNE FAVORS YOU!", "ABSOLUTE BUFFOONERY!"];
           const callouts = landedLuckies.map((_, luckyIndex) => {
             const level = luckyCountRef.current + luckyIndex + 1;
-            return { id: ++luckyCalloutIdRef.current, message: messages[Math.min(level, messages.length) - 1], x: 14 + Math.random() * 72, y: 12 + Math.random() * 62, rotation: -12 + Math.random() * 24, level };
+            return { id: ++luckyCalloutIdRef.current, message: getLuckyCallout(level), x: 14 + Math.random() * 72, y: 12 + Math.random() * 62, rotation: -12 + Math.random() * 24, level };
           });
           luckyCountRef.current += landedLuckies.length;
           setLuckyLandings((current) => ({ ...current, ...additions }));
@@ -251,7 +251,7 @@ export function Arcade() {
           {suspenseLevel >= 2 && <div className="suspense-vignette" aria-hidden="true"><span>{suspenseLevel} LUCKIES…</span></div>}
           {slotsResult?.wins.length ? <PaylineCanvas wins={slotsResult.wins} /> : null}
         </div>
-        <div className="bet-bar"><span>BET</span><button type="button" onClick={() => { setBet((current) => Math.max(5, current - 5)); playTone(360, .06, 0, "sine", .035); }} disabled={playing || bet <= 5} aria-label="Decrease bet">−</button><strong>{bet} <small>Suds</small></strong><button type="button" onClick={() => { setBet((current) => Math.min(100, current + 5)); playTone(520, .06, 0, "sine", .035); }} disabled={playing || bet >= 100} aria-label="Increase bet">+</button></div>
+        <div className="bet-bar"><span>BET</span><button type="button" onClick={() => { setBet((current) => Math.max(5, current - 5)); playTone(360, .06, 0, "sine", .035); }} disabled={bet <= 5} aria-label="Decrease bet">−</button><strong>{bet} <small>Suds</small></strong><button type="button" onClick={() => { setBet((current) => Math.min(100, current + 5)); playTone(520, .06, 0, "sine", .035); }} disabled={bet >= 100} aria-label="Increase bet">+</button></div>
         <button className="roll slot-spin" type="button" onClick={() => void spin()} disabled={playing || !canPlay}><span>{playing ? "Spinning…" : `Spin for ${bet} Suds`}</span><b>›</b></button>
         {slotsResult && <div className={`slot-summary ${slotsResult.payout ? "won" : "lost"} ${slotsResult.luckyBonus ? "lucky-win" : ""}`} aria-live="polite">{slotsResult.luckyBonus && <div className="lucky-bonus"><small>{slotsResult.luckyBonus.count} LUCKIES</small><strong>{slotsResult.luckyBonus.tier}!</strong><span>{slotsResult.luckyBonus.multiplier}× BET · +{slotsResult.luckyBonus.payout} SUDS</span></div>}<div><small>{slotsResult.payout ? "TOTAL WIN" : "NO LINE WIN"}</small><strong>{slotsResult.payout ? `${slotsResult.payout} Suds` : "Try again"}</strong><span>{slotsResult.delta >= 0 ? "+" : ""}{slotsResult.delta} net · {slotsResult.balance} remaining</span></div>{slotsResult.wins.length > 0 && <div className="win-list">{slotsResult.wins.map((win, i) => <div className="win-chip" style={{ "--line-color": LINE_COLORS[i % LINE_COLORS.length] } as React.CSSProperties} key={win.line}><b>LINE {win.line}</b><span>{win.symbol} × {win.count}</span><strong>{win.multiplier}×</strong><em>+{win.payout}</em></div>)}</div>}</div>}
         {!slotsResult && <p className="pay-hint">Each winning line has its own multiplier and payout.</p>}

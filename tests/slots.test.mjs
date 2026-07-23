@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
+import { getLuckyCallout, LUCKY_CALLOUTS } from "../app/lucky-callouts.ts";
 import { evaluateLuckyBonus, evaluateSlotGrid, symbolFromRandom } from "../app/slots.ts";
 
 test("LUCKY substitutes for the best regular symbol on a payline", () => {
@@ -71,10 +72,17 @@ test("Lucky art is enlarged and each landing gets a varied floating message", as
     readFile(new URL("../app/slots.css", import.meta.url), "utf8"),
   ]);
   assert.match(arcade, /14 \+ Math\.random\(\) \* 72/);
-  assert.match(arcade, /OH, LUCKY YOU!/);
-  assert.match(arcade, /ABSOLUTE BUFFOONERY!/);
-  assert.match(css, /\.slot-cell\.lucky img\{[^}]*transform:scale\(1\.35\)/);
+  assert.match(arcade, /getLuckyCallout\(level\)/);
+  assert.match(css, /\.slot-cell\.lucky img\{[^}]*transform:scale\(1\.15\)/);
   assert.match(css, /@keyframes lucky-callout-float/);
+});
+
+test("each Lucky sequence position has its own editable phrase list", () => {
+  assert.equal(LUCKY_CALLOUTS.length, 5);
+  LUCKY_CALLOUTS.forEach((phrases) => assert.ok(phrases.length >= 3));
+  assert.equal(getLuckyCallout(1, () => 0), "OH, LUCKY YOU!");
+  assert.equal(getLuckyCallout(2, () => 0), "DOUBLE TROUBLE!");
+  assert.equal(getLuckyCallout(99, () => 0), "ABSOLUTE BUFFOONERY!");
 });
 
 test("Lucky effects are loaded and the baseline reels spin more deliberately", async () => {
