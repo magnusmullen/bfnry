@@ -127,13 +127,10 @@ export function Arcade() {
   }
 
   function playLuckyHit(luckyNumber: number) {
-    const lift = 2 ** ((Math.min(luckyNumber, 7) - 1) * 2 / 12);
-    const root = 196 * lift;
-    [1, 1.25, 1.5, 2].forEach((ratio, index) => playTone(root * ratio, .32 + index * .04, index * .012, index % 2 ? "sawtooth" : "triangle", .038));
-    playTone(72 * lift, .38, 0, "sine", .09);
-    playTone(root * 3, .12, .08, "square", .025);
-    [2.5, 3, 4].forEach((ratio, index) => playTone(root * ratio, .28, .12 + index * .055, "sine", .032));
-    if (luckyNumber >= 3) [1, 1.5, 2, 3].forEach((ratio, index) => playTone(root * ratio, .55, .2 + index * .035, "triangle", .045));
+    const audio = new Audio("/sfx/lucky.mp3?v=2");
+    audio.volume = .82;
+    audio.playbackRate = Math.min(1.35, 1 + (luckyNumber - 1) * .07);
+    void audio.play().catch(() => undefined);
   }
 
   function playSuspenseSound(luckyCount: number, duration: number) {
@@ -246,7 +243,7 @@ export function Arcade() {
       {game === "slots" ? <div className="game-stage slot-stage">
         <div className="stage-head"><span>{PAYLINES.length} ways to make a splash</span><span>{suspenseLevel >= 2 ? "Hold your breath…" : slotsResult ? `${slotsResult.wins.length} line${slotsResult.wins.length === 1 ? "" : "s"} hit` : "Ready"}</span></div>
         <div className={`slot-machine ${playing ? "spinning" : ""} ${suspenseLevel >= 2 ? "lucky-suspense" : ""}`} aria-label="Three row by five reel slot result">
-          <div className="slot-grid">{grid.map((row, rowIndex) => row.map((symbol, reelIndex) => { const cellKey = `${rowIndex}-${reelIndex}`; const luckyNumber = luckyLandings[cellKey]; return <div className={`slot-cell ${symbol === "LUCKY" ? "lucky" : ""} ${luckyNumber ? `lucky-landed lucky-level-${Math.min(luckyNumber, 5)}` : ""} ${playing && reelIndex >= stoppedReels ? "reel-spinning" : "reel-stopped"}`} key={cellKey}><img src={`/slots/${symbol}.png${symbol === "LUCKY" ? "?v=4" : ""}`} alt={playing && reelIndex >= stoppedReels ? "Spinning reel" : symbol} />{luckyNumber && <i className="lucky-starfield" aria-hidden="true" />}</div>; }))}</div>
+          <div className="slot-grid">{grid.map((row, rowIndex) => row.map((symbol, reelIndex) => { const cellKey = `${rowIndex}-${reelIndex}`; const luckyNumber = luckyLandings[cellKey]; return <div className={`slot-cell ${symbol === "LUCKY" ? "lucky" : ""} ${luckyNumber ? `lucky-landed lucky-level-${Math.min(luckyNumber, 5)}` : ""} ${playing && reelIndex >= stoppedReels ? "reel-spinning" : "reel-stopped"}`} key={cellKey}><span className="slot-art"><img src={`/slots/${symbol}.png${symbol === "LUCKY" ? "?v=4" : ""}`} alt={playing && reelIndex >= stoppedReels ? "Spinning reel" : symbol} /></span>{luckyNumber && <i className="lucky-starfield" aria-hidden="true" />}</div>; }))}</div>
           {luckyImpact.level > 0 && <div className={`lucky-screen-hit lucky-screen-level-${Math.min(luckyImpact.level, 5)}`} key={luckyImpact.token} aria-hidden="true" />}
           {suspenseLevel >= 2 && <div className="suspense-vignette" aria-hidden="true"><span>{suspenseLevel} LUCKIES…</span></div>}
           {slotsResult?.wins.length ? <PaylineCanvas wins={slotsResult.wins} /> : null}

@@ -45,6 +45,8 @@ test("Lucky tiles trigger a landing effect when their reel locks", async () => {
     readFile(new URL("../app/slots.css", import.meta.url), "utf8"),
   ]);
   assert.match(arcade, /playLuckyHit\(luckyNumber\)/);
+  assert.match(arcade, /new Audio\("\/sfx\/lucky\.mp3\?v=2"\)/);
+  assert.match(arcade, /audio\.playbackRate = Math\.min\(1\.35/);
   assert.match(arcade, /luckyCountRef\.current \+= landedLuckies\.length/);
   assert.match(arcade, /lucky-float-callout/);
   assert.match(css, /@keyframes lucky-impact/);
@@ -52,7 +54,9 @@ test("Lucky tiles trigger a landing effect when their reel locks", async () => {
   assert.match(css, /@keyframes lucky-screen-flash/);
   assert.match(css, /@keyframes lucky-word-punch/);
   assert.match(css, /\.slot-cell\.lucky-landed\{transform:none;animation-name:lucky-cell-glow\}/);
-  assert.match(css, /\.spinning \.slot-cell\.lucky-landed img\{animation:lucky-symbol-pop/);
+  assert.match(arcade, /<span className="slot-art"><img/);
+  assert.match(css, /\.slot-art\{position:absolute;inset:0;[^}]*overflow:hidden\}/);
+  assert.match(css, /\.spinning \.slot-cell\.lucky-landed \.slot-art img\{animation:lucky-symbol-pop/);
   assert.match(arcade, /setLuckyLandings\(\{\}\); setPlaying\(false\)/);
   assert.doesNotMatch(css, /prefers-reduced-motion/);
 });
