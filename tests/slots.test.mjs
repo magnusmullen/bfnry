@@ -43,9 +43,12 @@ test("Lucky tiles trigger a landing effect when their reel locks", async () => {
     readFile(new URL("../app/Arcade.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/slots.css", import.meta.url), "utf8"),
   ]);
-  assert.match(arcade, /setLuckyLandings\(\(current\) => \[\.\.\.current, \.\.\.landedLuckies\]\)/);
-  assert.match(arcade, /luckyLandings\.includes\(cellKey\) \? "lucky-landed"/);
+  assert.match(arcade, /playLuckyHit\(luckyNumber\)/);
+  assert.match(arcade, /luckyCountRef\.current \+= landedLuckies\.length/);
+  assert.match(arcade, /lucky-screen-hit/);
   assert.match(css, /@keyframes lucky-impact/);
   assert.match(css, /@keyframes lucky-ring/);
+  assert.match(css, /@keyframes lucky-screen-flash/);
+  assert.match(css, /@keyframes lucky-word-punch/);
   assert.match(css, /prefers-reduced-motion:reduce/);
 });

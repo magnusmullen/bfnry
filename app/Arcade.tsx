@@ -75,6 +75,7 @@ function PaylineCanvas({ wins }: { wins: SlotWin[] }) {
 
 export function Arcade() {
   const audioContextRef = useRef<AudioContext | null>(null);
+  const luckyCountRef = useRef(0);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [game, setGame] = useState<"slots" | "odd">("slots");
   const [choice, setChoice] = useState<"odd" | "even">("odd");
@@ -87,7 +88,8 @@ export function Arcade() {
   const [loading, setLoading] = useState(true);
   const [playing, setPlaying] = useState(false);
   const [stoppedReels, setStoppedReels] = useState(5);
-  const [luckyLandings, setLuckyLandings] = useState<string[]>([]);
+  const [luckyLandings, setLuckyLandings] = useState<Record<string, number>>({});
+  const [luckyImpact, setLuckyImpact] = useState({ token: 0, level: 0 });
   const [bonusState, setBonusState] = useState<"idle" | "claiming" | "claimed">("idle");
   const [bonusMessage, setBonusMessage] = useState("");
   const [code, setCode] = useState("");
@@ -120,6 +122,16 @@ export function Arcade() {
     }
   }
 
+  function playLuckyHit(luckyNumber: number) {
+    const lift = 2 ** ((Math.min(luckyNumber, 7) - 1) * 2 / 12);
+    const root = 196 * lift;
+    [1, 1.25, 1.5, 2].forEach((ratio, index) => playTone(root * ratio, .32 + index * .04, index * .012, index % 2 ? "sawtooth" : "triangle", .038));
+    playTone(72 * lift, .38, 0, "sine", .09);
+    playTone(root * 3, .12, .08, "square", .025);
+    [2.5, 3, 4].forEach((ratio, index) => playTone(root * ratio, .28, .12 + index * .055, "sine", .032));
+    if (luckyNumber >= 3) [1, 1.5, 2, 3].forEach((ratio, index) => playTone(root * ratio, .55, .2 + index * .035, "triangle", .045));
+  }
+
   const loadAccount = useCallback(async () => {
     setLoading(true); setAccountError("");
     try {
@@ -138,7 +150,8 @@ export function Arcade() {
   }
   async function spin() {
     playTone(260, .08, 0, "square", .025); playTone(390, .1, .07, "square", .025);
-    setPlaying(true); setStoppedReels(0); setLuckyLandings([]); setGameError(""); setSlotsResult(null);
+    luckyCountRef.current = 0;
+    setPlaying(true); setStoppedReels(0); setLuckyLandings({}); setLuckyImpact({ token: 0, level: 0 }); setGameError(""); setSlotsResult(null);
     const startedAt = Date.now();
     let targetGrid: SlotGrid | null = null;
     let lockedReels = 0;
@@ -160,11 +173,15 @@ export function Arcade() {
         playTone(170 + reel * 32, .07, 0, "square", .035);
         const landedLuckies = next.grid.flatMap((row, rowIndex) => row[reel] === "LUCKY" ? [`${rowIndex}-${reel}`] : []);
         if (landedLuckies.length) {
-          setLuckyLandings((current) => [...current, ...landedLuckies]);
-          landedLuckies.forEach((_, luckyIndex) => {
-            playTone(660 + reel * 55 + luckyIndex * 90, .2, luckyIndex * .06, "triangle", .065);
-            playTone(990 + reel * 70 + luckyIndex * 120, .24, .08 + luckyIndex * .06, "sine", .045);
+          const additions: Record<string, number> = {};
+          landedLuckies.forEach((cellKey, luckyIndex) => {
+            const luckyNumber = luckyCountRef.current + luckyIndex + 1;
+            additions[cellKey] = luckyNumber;
+            playLuckyHit(luckyNumber);
           });
+          luckyCountRef.current += landedLuckies.length;
+          setLuckyLandings((current) => ({ ...current, ...additions }));
+          setLuckyImpact((current) => ({ token: current.token + 1, level: luckyCountRef.current }));
         }
         setStoppedReels(lockedReels);
         setGrid((current) => current.map((row, rowIndex) => row.map((symbol, reelIndex) =>
@@ -201,7 +218,8 @@ export function Arcade() {
       {game === "slots" ? <div className="game-stage slot-stage">
         <div className="stage-head"><span>{PAYLINES.length} ways to make a splash</span><span>{slotsResult ? `${slotsResult.wins.length} line${slotsResult.wins.length === 1 ? "" : "s"} hit` : "Ready"}</span></div>
         <div className={`slot-machine ${playing ? "spinning" : ""}`} aria-label="Three row by five reel slot result">
-          <div className="slot-grid">{grid.map((row, rowIndex) => row.map((symbol, reelIndex) => { const cellKey = `${rowIndex}-${reelIndex}`; return <div className={`slot-cell ${symbol === "LUCKY" ? "lucky" : ""} ${luckyLandings.includes(cellKey) ? "lucky-landed" : ""} ${playing && reelIndex >= stoppedReels ? "reel-spinning" : "reel-stopped"}`} key={cellKey}><img src={`/slots/${symbol}.png`} alt={playing && reelIndex >= stoppedReels ? "Spinning reel" : symbol} /></div>; }))}</div>
+          <div className="slot-grid">{grid.map((row, rowIndex) => row.map((symbol, reelIndex) => { const cellKey = `${rowIndex}-${reelIndex}`; const luckyNumber = luckyLandings[cellKey]; return <div className={`slot-cell ${symbol === "LUCKY" ? "lucky" : ""} ${luckyNumber ? `lucky-landed lucky-level-${Math.min(luckyNumber, 5)}` : ""} ${playing && reelIndex >= stoppedReels ? "reel-spinning" : "reel-stopped"}`} key={cellKey}><img src={`/slots/${symbol}.png`} alt={playing && reelIndex >= stoppedReels ? "Spinning reel" : symbol} />{luckyNumber && <i className="lucky-starfield" aria-hidden="true" />}</div>; }))}</div>
+          {luckyImpact.level > 0 && <div className={`lucky-screen-hit lucky-screen-level-${Math.min(luckyImpact.level, 5)}`} key={luckyImpact.token} aria-hidden="true"><b>LUCKY!</b><span>#{luckyImpact.level}</span></div>}
           {slotsResult?.wins.length ? <PaylineCanvas wins={slotsResult.wins} /> : null}
         </div>
         <div className="bet-bar"><span>BET</span><button type="button" onClick={() => { setBet((current) => Math.max(5, current - 5)); playTone(360, .06, 0, "sine", .035); }} disabled={playing || bet <= 5} aria-label="Decrease bet">−</button><strong>{bet} <small>Suds</small></strong><button type="button" onClick={() => { setBet((current) => Math.min(100, current + 5)); playTone(520, .06, 0, "sine", .035); }} disabled={playing || bet >= 100} aria-label="Increase bet">+</button></div>
