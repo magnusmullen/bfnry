@@ -51,7 +51,7 @@ test("Lucky tiles trigger a landing effect when their reel locks", async () => {
   assert.match(css, /@keyframes lucky-ring/);
   assert.match(css, /@keyframes lucky-screen-flash/);
   assert.match(css, /@keyframes lucky-word-punch/);
-  assert.match(css, /\.slot-cell\.lucky-landed\{transform:none;animation-name:lucky-cell-glow\}/);
+  assert.match(css, /\.slot-cell\.lucky-landed\{transform:none;overflow:hidden;animation-name:lucky-cell-glow\}/);
   assert.match(css, /\.spinning \.slot-cell\.lucky-landed img\{animation:lucky-symbol-pop/);
   assert.match(arcade, /setLuckyLandings\(\{\}\); setPlaying\(false\)/);
   assert.doesNotMatch(css, /prefers-reduced-motion/);
