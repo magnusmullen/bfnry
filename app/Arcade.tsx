@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Jukebox } from "./Jukebox";
 import { getLuckyCallout } from "./lucky-callouts";
 import { PAYLINES, symbolFromRandom, type LuckyBonus, type SlotGrid, type SlotWin } from "./slots";
 
@@ -231,6 +232,7 @@ export function Arcade() {
 
   return <main className="site-shell">
     <div className="ambient" aria-hidden="true"><i /><i /><i /><i /><i /></div>
+    <Jukebox />
     {luckyCallouts.map((callout) => <div className={`lucky-float-callout lucky-float-level-${Math.min(callout.level, 5)}`} key={callout.id} style={{ left: `${callout.x}%`, top: `${callout.y}%`, "--callout-rotation": `${callout.rotation}deg` } as React.CSSProperties} aria-hidden="true">{callout.message}</div>)}
     <button className={`bonus-bubble ${bonusState}`} type="button" onClick={() => void claimBonus()} disabled={bonusState !== "idle"} aria-label="Collect 30 bonus Suds"><span>{bonusState === "claiming" ? "…" : bonusState === "claimed" ? "✓" : "+30"}</span><small>{bonusMessage || "Suds"}</small></button>
     <header className="nav-shell"><a className="brand" href="#top" aria-label="BFNRY home"><span className="brand-mark"><b /></span><span><strong>BFNRY</strong><small>Whimsy online</small></span></a><nav aria-label="Primary navigation"><a className="active" href="#play">Play</a><a href="#pulse">Pulse</a><a href="#about">About</a></nav><div className="player-pill" aria-live="polite"><i /><span>{loading ? "Connecting…" : profile?.displayName ?? "Offline"}</span><strong>{profile ? `${profile.balance} Suds` : "—"}</strong></div></header>

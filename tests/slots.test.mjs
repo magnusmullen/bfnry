@@ -80,7 +80,7 @@ test("Lucky art is enlarged and each landing gets a varied floating message", as
   ]);
   assert.match(arcade, /14 \+ Math\.random\(\) \* 72/);
   assert.match(arcade, /getLuckyCallout\(level\)/);
-  assert.match(css, /\.slot-cell\.lucky img\{[^}]*transform:scale\(1\.15\)/);
+  assert.match(css, /\.slot-cell\.lucky img\{[^}]*transform:scale\(1\.08\)/);
   assert.match(css, /@keyframes lucky-callout-float/);
 });
 
@@ -97,11 +97,27 @@ test("Lucky effects are loaded and the baseline reels spin more deliberately", a
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/Arcade.tsx", import.meta.url), "utf8"),
   ]);
-  assert.match(layout, /import "\.\/slots\.css";\s*import "\.\/globals\.css";/);
+  assert.match(layout, /import "\.\/slots\.css";[\s\S]*import "\.\/globals\.css";/);
   assert.match(arcade, /}, 92\)/);
   assert.match(arcade, /Math\.max\(0, 760 - \(Date\.now\(\) - startedAt\)\)/);
   assert.match(arcade, /reel === 0 \? 170 : 260/);
   assert.match(arcade, /LUCKY" \? "\?v=4"/);
+});
+
+test("jukebox has an empty-library state and editable local playlist", async () => {
+  const [arcade, jukebox, playlist] = await Promise.all([
+    readFile(new URL("../app/Arcade.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/Jukebox.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/music/playlist.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(arcade, /<Jukebox \/>/);
+  assert.match(jukebox, /NOW PLAYING:/);
+  assert.match(jukebox, /MUSIC BAY EMPTY/);
+  assert.match(jukebox, /type="range"/);
+  assert.match(jukebox, /className="jukebox-status"/);
+  assert.doesNotMatch(jukebox, /<footer>/);
+  assert.match(playlist, /export const MUSIC_TRACKS/);
+  assert.match(playlist, /new URL\("\.\/ocean-dream\.mp3", import\.meta\.url\)\.href/);
 });
 
 test("slot and ambient effects always animate regardless of motion preferences", async () => {

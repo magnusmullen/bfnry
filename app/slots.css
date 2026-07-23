@@ -28,3 +28,5 @@
 @keyframes lucky-callout-fade{0%{opacity:0}12%,72%{opacity:1}100%{opacity:0}}
 @media(max-width:900px){.slots-space{grid-template-columns:1fr}.slots-space .game-intro{padding:25px}.slot-cell{border-radius:12px}}
 @media(max-width:520px){.game-tabs{margin-left:8px;margin-right:8px}.slot-stage{padding:15px 9px}.slot-machine{padding:4px;border-radius:16px}.slot-grid{gap:3px}.slot-cell{border-radius:8px}.payline-canvas{inset:4px;width:calc(100% - 8px);height:calc(100% - 8px)}.win-list{grid-template-columns:1fr}.slot-summary>div:first-child span{display:none}}
+.slot-cell.lucky img{transform:scale(1.08)}
+@keyframes lucky-symbol-pop{0%{transform:scale(.4) rotate(-18deg);opacity:.2}38%{transform:scale(1.58) rotate(8deg);opacity:1}65%{transform:scale(1.03) rotate(-3deg)}100%{transform:scale(1.08) rotate(0)}}
