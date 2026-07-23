@@ -50,7 +50,7 @@ test("Lucky tiles trigger a landing effect when their reel locks", async () => {
   assert.match(css, /@keyframes lucky-ring/);
   assert.match(css, /@keyframes lucky-screen-flash/);
   assert.match(css, /@keyframes lucky-word-punch/);
-  assert.match(css, /prefers-reduced-motion:reduce/);
+  assert.doesNotMatch(css, /prefers-reduced-motion/);
 });
 
 test("Lucky landings pause later reels and two Luckies add suspense", async () => {
@@ -73,6 +73,29 @@ test("Lucky art is enlarged and each landing gets a varied floating message", as
   assert.match(arcade, /14 \+ Math\.random\(\) \* 72/);
   assert.match(arcade, /OH, LUCKY YOU!/);
   assert.match(arcade, /ABSOLUTE BUFFOONERY!/);
-  assert.match(css, /\.slot-cell\.lucky img\{[^}]*transform:scale\(1\.55\)/);
+  assert.match(css, /\.slot-cell\.lucky img\{[^}]*transform:scale\(1\.35\)/);
   assert.match(css, /@keyframes lucky-callout-float/);
+});
+
+test("Lucky effects are loaded and the baseline reels spin more deliberately", async () => {
+  const [layout, arcade] = await Promise.all([
+    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/Arcade.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(layout, /import "\.\/slots\.css";\s*import "\.\/globals\.css";/);
+  assert.match(arcade, /}, 92\)/);
+  assert.match(arcade, /Math\.max\(0, 760 - \(Date\.now\(\) - startedAt\)\)/);
+  assert.match(arcade, /reel === 0 \? 170 : 260/);
+  assert.match(arcade, /LUCKY" \? "\?v=4"/);
+});
+
+test("slot and ambient effects always animate regardless of motion preferences", async () => {
+  const [arcade, slotsCss, globalCss] = await Promise.all([
+    readFile(new URL("../app/Arcade.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/slots.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
+  assert.doesNotMatch(arcade, /prefers-reduced-motion|reducedMotion/);
+  assert.doesNotMatch(slotsCss, /prefers-reduced-motion/);
+  assert.doesNotMatch(globalCss, /prefers-reduced-motion/);
 });

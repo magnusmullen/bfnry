@@ -25,7 +25,6 @@ function PaylineCanvas({ wins }: { wins: SlotWin[] }) {
     let startedAt = performance.now();
     const lineDuration = 380;
     const lineGap = 90;
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const prepareCanvas = () => {
       const rect = canvas.getBoundingClientRect();
@@ -58,7 +57,7 @@ function PaylineCanvas({ wins }: { wins: SlotWin[] }) {
       if (!prepared) return;
       const { ctx, rect } = prepared;
       ctx.clearRect(0, 0, rect.width, rect.height);
-      const elapsed = reducedMotion ? Number.POSITIVE_INFINITY : now - startedAt;
+      const elapsed = now - startedAt;
       wins.forEach((win, index) => {
         const progress = Math.min(1, Math.max(0, (elapsed - index * (lineDuration + lineGap)) / lineDuration));
         drawLine(ctx, rect, win, index, progress);
@@ -176,14 +175,14 @@ export function Arcade() {
           ? targetGrid[rowIndex][reelIndex]
           : symbolFromRandom(Math.floor(Math.random() * 0x100000000)) ?? symbol
       )) as SlotGrid);
-    }, 72);
+    }, 92);
     try {
       const next = await readJson<SlotsResult>(await fetch("/api/slots", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ bet }) }));
       targetGrid = next.grid;
-      const remainingLeadIn = Math.max(0, 620 - (Date.now() - startedAt));
+      const remainingLeadIn = Math.max(0, 760 - (Date.now() - startedAt));
       if (remainingLeadIn) await new Promise((resolve) => window.setTimeout(resolve, remainingLeadIn));
       for (let reel = 0; reel < 5; reel++) {
-        await new Promise((resolve) => window.setTimeout(resolve, reel === 0 ? 120 : 190));
+        await new Promise((resolve) => window.setTimeout(resolve, reel === 0 ? 170 : 260));
         lockedReels = reel + 1;
         playTone(170 + reel * 32, .07, 0, "square", .035);
         const landedLuckies = next.grid.flatMap((row, rowIndex) => row[reel] === "LUCKY" ? [`${rowIndex}-${reel}`] : []);
@@ -247,7 +246,7 @@ export function Arcade() {
       {game === "slots" ? <div className="game-stage slot-stage">
         <div className="stage-head"><span>{PAYLINES.length} ways to make a splash</span><span>{suspenseLevel >= 2 ? "Hold your breath…" : slotsResult ? `${slotsResult.wins.length} line${slotsResult.wins.length === 1 ? "" : "s"} hit` : "Ready"}</span></div>
         <div className={`slot-machine ${playing ? "spinning" : ""} ${suspenseLevel >= 2 ? "lucky-suspense" : ""}`} aria-label="Three row by five reel slot result">
-          <div className="slot-grid">{grid.map((row, rowIndex) => row.map((symbol, reelIndex) => { const cellKey = `${rowIndex}-${reelIndex}`; const luckyNumber = luckyLandings[cellKey]; return <div className={`slot-cell ${symbol === "LUCKY" ? "lucky" : ""} ${luckyNumber ? `lucky-landed lucky-level-${Math.min(luckyNumber, 5)}` : ""} ${playing && reelIndex >= stoppedReels ? "reel-spinning" : "reel-stopped"}`} key={cellKey}><img src={`/slots/${symbol}.png`} alt={playing && reelIndex >= stoppedReels ? "Spinning reel" : symbol} />{luckyNumber && <i className="lucky-starfield" aria-hidden="true" />}</div>; }))}</div>
+          <div className="slot-grid">{grid.map((row, rowIndex) => row.map((symbol, reelIndex) => { const cellKey = `${rowIndex}-${reelIndex}`; const luckyNumber = luckyLandings[cellKey]; return <div className={`slot-cell ${symbol === "LUCKY" ? "lucky" : ""} ${luckyNumber ? `lucky-landed lucky-level-${Math.min(luckyNumber, 5)}` : ""} ${playing && reelIndex >= stoppedReels ? "reel-spinning" : "reel-stopped"}`} key={cellKey}><img src={`/slots/${symbol}.png${symbol === "LUCKY" ? "?v=4" : ""}`} alt={playing && reelIndex >= stoppedReels ? "Spinning reel" : symbol} />{luckyNumber && <i className="lucky-starfield" aria-hidden="true" />}</div>; }))}</div>
           {luckyImpact.level > 0 && <div className={`lucky-screen-hit lucky-screen-level-${Math.min(luckyImpact.level, 5)}`} key={luckyImpact.token} aria-hidden="true" />}
           {suspenseLevel >= 2 && <div className="suspense-vignette" aria-hidden="true"><span>{suspenseLevel} LUCKIES…</span></div>}
           {slotsResult?.wins.length ? <PaylineCanvas wins={slotsResult.wins} /> : null}
