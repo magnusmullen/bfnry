@@ -47,5 +47,10 @@ async function initialize() {
       grid TEXT NOT NULL,
       created_at TEXT NOT NULL
     )`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS blackjack_sessions (
+      player_email TEXT PRIMARY KEY NOT NULL,
+      state TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )`),
   ]);
 }

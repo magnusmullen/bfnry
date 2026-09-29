@@ -1,8 +1,21 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
-import { getLuckyCallout, LUCKY_CALLOUTS } from "../app/lucky-callouts.ts";
-import { evaluateLuckyBonus, evaluateSlotGrid, symbolFromRandom } from "../app/slots.ts";
+import { getLuckyCallout, LUCKY_CALLOUTS } from "../app/slots/lucky-callouts.ts";
+import { evaluateLuckyBonus, evaluateSlotGrid, symbolFromRandom } from "../app/slots/engine.ts";
+import { hot3Result, perfectPairsResult } from "../app/blackjack/engine.ts";
+
+test("blackjack side bets identify Perfect Pairs payout tiers", () => {
+  assert.deepEqual(perfectPairsResult([{ rank: "8", suit: "♥" }, { rank: "8", suit: "♥" }]), { name: "Perfect pair", odds: 30 });
+  assert.deepEqual(perfectPairsResult([{ rank: "8", suit: "♥" }, { rank: "8", suit: "♦" }]), { name: "Colored pair", odds: 12 });
+  assert.deepEqual(perfectPairsResult([{ rank: "8", suit: "♥" }, { rank: "8", suit: "♣" }]), { name: "Mixed pair", odds: 5 });
+});
+
+test("blackjack Hot 3 recognizes the highest eligible hand", () => {
+  assert.deepEqual(hot3Result([{ rank: "7", suit: "♥" }, { rank: "7", suit: "♣" }, { rank: "7", suit: "♦" }]), { name: "7-7-7", odds: 100 });
+  assert.deepEqual(hot3Result([{ rank: "7", suit: "♥" }, { rank: "4", suit: "♥" }, { rank: "K", suit: "♥" }]), { name: "Suited 21", odds: 20 });
+  assert.deepEqual(hot3Result([{ rank: "10", suit: "♣" }, { rank: "8", suit: "♥" }, { rank: "A", suit: "♦" }]), { name: "Total 19", odds: 1 });
+});
 
 test("LUCKY substitutes for the best regular symbol on a payline", () => {
   const grid = [
@@ -42,7 +55,7 @@ test("bet controls use explicit mobile-safe buttons and functional updates", asy
 test("Lucky tiles trigger a landing effect when their reel locks", async () => {
   const [arcade, css] = await Promise.all([
     readFile(new URL("../app/Arcade.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/slots.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/slots/slots.css", import.meta.url), "utf8"),
   ]);
   assert.match(arcade, /playLuckyHit\(luckyNumber\)/);
   assert.match(arcade, /new Audio\("\/sfx\/lucky\.mp3\?v=2"\)/);
@@ -64,7 +77,7 @@ test("Lucky tiles trigger a landing effect when their reel locks", async () => {
 test("Lucky landings pause later reels and two Luckies add suspense", async () => {
   const [arcade, css] = await Promise.all([
     readFile(new URL("../app/Arcade.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/slots.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/slots/slots.css", import.meta.url), "utf8"),
   ]);
   assert.match(arcade, /luckyCountRef\.current >= 2 \? 1700 : 350/);
   assert.match(arcade, /playSuspenseSound\(luckyCountRef\.current, suspenseDelay\)/);
@@ -76,7 +89,7 @@ test("Lucky landings pause later reels and two Luckies add suspense", async () =
 test("Lucky art is enlarged and each landing gets a varied floating message", async () => {
   const [arcade, css] = await Promise.all([
     readFile(new URL("../app/Arcade.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/slots.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/slots/slots.css", import.meta.url), "utf8"),
   ]);
   assert.match(arcade, /14 \+ Math\.random\(\) \* 72/);
   assert.match(arcade, /getLuckyCallout\(level\)/);
@@ -97,7 +110,7 @@ test("Lucky effects are loaded and the baseline reels spin more deliberately", a
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/Arcade.tsx", import.meta.url), "utf8"),
   ]);
-  assert.match(layout, /import "\.\/slots\.css";[\s\S]*import "\.\/globals\.css";/);
+  assert.match(layout, /import "\.\/slots\/slots\.css";[\s\S]*import "\.\/globals\.css";/);
   assert.match(arcade, /}, 92\)/);
   assert.match(arcade, /Math\.max\(0, 760 - \(Date\.now\(\) - startedAt\)\)/);
   assert.match(arcade, /reel === 0 \? 170 : 260/);
@@ -125,7 +138,7 @@ test("jukebox has an empty-library state and editable local playlist", async () 
 test("slot and ambient effects always animate regardless of motion preferences", async () => {
   const [arcade, slotsCss, globalCss] = await Promise.all([
     readFile(new URL("../app/Arcade.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/slots.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/slots/slots.css", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
   assert.doesNotMatch(arcade, /prefers-reduced-motion|reducedMotion/);

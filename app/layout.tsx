@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import "./slots.css";
+import "./slots/slots.css";
+import "./blackjack/blackjack.css";
+import "./blackjack/animation.css";
+import "./blackjack/chips.css";
+import "./blackjack/large-table.css";
+import "./blackjack/table-effects.css";
 import "./jukebox.css";
+import "./session.css";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {

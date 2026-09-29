@@ -1,0 +1,11 @@
+.play-space.blackjack-space{max-width:1080px}
+.blackjack-space .blackjack-stage{width:min(100%,940px);padding:32px}
+.blackjack-space .blackjack-table{padding:28px}
+.blackjack-space .playing-card{width:62px;height:88px;padding:8px;font-size:21px}
+.blackjack-space .dealer-row,.blackjack-space .hand-row{min-height:132px;gap:18px}
+.blackjack-space .dealer-row>div:first-child{min-width:96px}
+.blackjack-space .dealer-row strong,.blackjack-space .player-hand>strong{font-size:17px}
+.blackjack-space .player-hand{min-width:180px}
+.blackjack-space .dealer-row,.blackjack-space .hand-row{justify-content:center}
+.blackjack-space .dealer-row small,.blackjack-space .player-hand small{font-size:9px}.blackjack-space .blackjack-status{font-size:12px}.blackjack-space .table-bet small{font-size:10px}.blackjack-space .table-bet{margin-top:16px}
+@media(max-width:800px){.blackjack-space .blackjack-stage{width:100%;padding:20px}.blackjack-space .blackjack-table{padding:18px}.blackjack-space .playing-card{width:48px;height:68px;font-size:17px}.blackjack-space .dealer-row,.blackjack-space .hand-row{min-height:106px;gap:12px}}
