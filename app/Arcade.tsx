@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Jukebox } from "./Jukebox";
-import { getLuckyCallout } from "./lucky-callouts";
-import { PAYLINES, symbolFromRandom, type LuckyBonus, type SlotGrid, type SlotWin } from "./slots";
+import { BlackjackTable } from "./blackjack/BlackjackTable";
+import { getLuckyCallout } from "./slots/lucky-callouts";
+import { PAYLINES, symbolFromRandom, type LuckyBonus, type SlotGrid, type SlotWin } from "./slots/engine";
 
 type Profile = { displayName: string; balance: number; demo: boolean; bonusClaimed?: boolean; promoClaimed?: boolean };
 type GameResult = Profile & { roll: number; won: boolean; delta: number };
@@ -80,7 +81,13 @@ export function Arcade() {
   const luckyCountRef = useRef(0);
   const luckyCalloutIdRef = useRef(0);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [game, setGame] = useState<"slots" | "odd">("slots");
+  const [sessionStartBalance, setSessionStartBalance] = useState<number | null>(null);
+  const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null);
+  const [sessionSeconds, setSessionSeconds] = useState(0);
+  const [testFundsOpen, setTestFundsOpen] = useState(false);
+  const [testFundsAmount, setTestFundsAmount] = useState("100");
+  const [testFundsMessage, setTestFundsMessage] = useState("");
+  const [game, setGame] = useState<"slots" | "odd" | "blackjack">("slots");
   const [choice, setChoice] = useState<"odd" | "even">("odd");
   const [result, setResult] = useState<GameResult | null>(null);
   const [slotsResult, setSlotsResult] = useState<SlotsResult | null>(null);
@@ -148,12 +155,13 @@ export function Arcade() {
   const loadAccount = useCallback(async () => {
     setLoading(true); setAccountError("");
     try {
-      const next = await readJson<Profile>(await fetch("/api/account", { cache: "no-store" })); setProfile(next);
+      const next = await readJson<Profile>(await fetch("/api/account", { cache: "no-store" })); setProfile(next); setSessionStartBalance((current) => current ?? next.balance); setSessionStartedAt((current) => current ?? Date.now());
       if (next.bonusClaimed) { setBonusState("claimed"); setBonusMessage("Collected"); }
     } catch (error) { setAccountError(error instanceof Error ? error.message : "Could not load player"); }
     finally { setLoading(false); }
   }, []);
   useEffect(() => { void loadAccount(); }, [loadAccount]);
+  useEffect(() => { if (!sessionStartedAt) return; const timer = window.setInterval(() => setSessionSeconds(Math.floor((Date.now() - sessionStartedAt) / 1000)), 1000); return () => window.clearInterval(timer); }, [sessionStartedAt]);
 
   async function playOddEven() {
     setPlaying(true); setGameError("");
@@ -228,6 +236,11 @@ export function Arcade() {
     catch (error) { setRedeemMessage(error instanceof Error ? error.message : "That code didn’t work"); }
     finally { setRedeemState("idle"); }
   }
+  async function addTestFunds(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setTestFundsMessage("");
+    try { const next = await readJson<Profile & { added: number }>(await fetch("/api/test-funds", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ amount: Number(testFundsAmount) }) })); setProfile(next); setTestFundsMessage(`+${next.added} Suds added`); }
+    catch (error) { setTestFundsMessage(error instanceof Error ? error.message : "Could not add test funds"); }
+  }
   const canPlay = !!profile && profile.balance >= (game === "slots" ? bet : 10);
 
   return <main className="site-shell">
@@ -235,12 +248,12 @@ export function Arcade() {
     <Jukebox />
     {luckyCallouts.map((callout) => <div className={`lucky-float-callout lucky-float-level-${Math.min(callout.level, 5)}`} key={callout.id} style={{ left: `${callout.x}%`, top: `${callout.y}%`, "--callout-rotation": `${callout.rotation}deg` } as React.CSSProperties} aria-hidden="true">{callout.message}</div>)}
     <button className={`bonus-bubble ${bonusState}`} type="button" onClick={() => void claimBonus()} disabled={bonusState !== "idle"} aria-label="Collect 30 bonus Suds"><span>{bonusState === "claiming" ? "…" : bonusState === "claimed" ? "✓" : "+30"}</span><small>{bonusMessage || "Suds"}</small></button>
-    <header className="nav-shell"><a className="brand" href="#top" aria-label="BFNRY home"><span className="brand-mark"><b /></span><span><strong>BFNRY</strong><small>Whimsy online</small></span></a><nav aria-label="Primary navigation"><a className="active" href="#play">Play</a><a href="#pulse">Pulse</a><a href="#about">About</a></nav><div className="player-pill" aria-live="polite"><i /><span>{loading ? "Connecting…" : profile?.displayName ?? "Offline"}</span><strong>{profile ? `${profile.balance} Suds` : "—"}</strong></div></header>
+    <header className="nav-shell"><a className="brand" href="#top" aria-label="BFNRY home"><span className="brand-mark"><b /></span><span><strong>BFNRY</strong><small>Whimsy online</small></span></a><nav aria-label="Primary navigation"><a className="active" href="#play">Play</a><a href="#pulse">Pulse</a><a href="#about">About</a></nav></header><aside className="status-dock"><div className="player-pill" aria-live="polite"><i /><span>{loading ? "Connecting…" : profile?.displayName ?? "Offline"}</span><strong>{profile ? `${profile.balance} Suds` : "—"}</strong><div className="session-stats"><small>{profile && sessionStartBalance !== null ? `${profile.balance - sessionStartBalance >= 0 ? "+" : ""}${profile.balance - sessionStartBalance} session` : "Session —"}</small><small>{`${Math.floor(sessionSeconds / 60)}:${String(sessionSeconds % 60).padStart(2, "0")}`}</small></div><button className="test-funds-toggle" type="button" onClick={() => setTestFundsOpen((open) => !open)}>Test funds</button></div>{testFundsOpen && <form className="test-funds-panel" onSubmit={(event) => void addTestFunds(event)}><label htmlFor="test-funds">Add testing Suds</label><div><input id="test-funds" type="number" min="1" max="1000000" step="1" value={testFundsAmount} onChange={(event) => setTestFundsAmount(event.target.value)} /><button type="submit">Add</button></div><p aria-live="polite">{testFundsMessage}</p></form>}</aside>
     <section className="hero" id="top"><div className="hero-orbit" aria-hidden="true"><span /><span /><span /></div><p className="overline">Buffoonery Inc. Presents</p><h1>buffoonery,<br /><em>on the web</em></h1><p className="hero-copy">Magnus&apos; little haven for all buffoons to enjoy.</p><a className="hero-action" href="#play"><span>Enter the arcade</span><b>↓</b></a></section>
 
-    <div className="game-tabs" role="tablist" aria-label="Choose a game"><button role="tab" aria-selected={game === "slots"} onClick={() => { setGame("slots"); setGameError(""); }}>Suds &amp; Symbols <small>NEW</small></button><button role="tab" aria-selected={game === "odd"} onClick={() => { setGame("odd"); setGameError(""); }}>Odd or Even</button></div>
-    <section className={`play-space ${game === "slots" ? "slots-space" : ""}`} id="play" aria-labelledby="game-heading">
-      <div className="game-intro"><span className="game-orb" aria-hidden="true"><b>{game === "slots" ? "5" : "?"}</b></span><p className="overline">NOW PLAYING</p><h2 id="game-heading">{game === "slots" ? "Suds & Symbols" : "Odd or Even"}</h2><p>{game === "slots" ? `Match 3–5 symbols from the left across any of ${PAYLINES.length} natural paylines. Every unique winning line pays.` : "Choose a side. We’ll roll the number and see what you get! Best of luck hehe! :)"}</p><div className="rules">{game === "slots" ? <><span><small>MIN BET</small>5 Suds</span><span><small>LINES</small>{PAYLINES.length} active</span><span><small>LUCKY</small>Wild + bonus</span></> : <><span><small>PLAY</small>10 Suds</span><span><small>WIN</small>+10 Suds</span><span><small>CHANCE</small>50 / 50</span></>}</div><div className="soft-note"><span>i</span><p>{game === "slots" ? "LUCKY is wild. Find 3 anywhere for a big bonus, 4 for super, or 5+ for buffoon." : "This is the first game made on this website!"}</p></div></div>
+    <div className="game-tabs game-tabs-three" role="tablist" aria-label="Choose a game"><button role="tab" aria-selected={game === "slots"} onClick={() => { setGame("slots"); setGameError(""); }}>Suds &amp; Symbols <small>NEW</small></button><button role="tab" aria-selected={game === "blackjack"} onClick={() => { setGame("blackjack"); setGameError(""); }}>Blackjack</button><button role="tab" aria-selected={game === "odd"} onClick={() => { setGame("odd"); setGameError(""); }}>Odd or Even</button></div>
+    <section className={`play-space ${game === "slots" ? "slots-space" : game === "blackjack" ? "blackjack-space" : ""}`} id="play" aria-labelledby="game-heading">
+      <div className="game-intro"><span className="game-orb" aria-hidden="true"><b>{game === "slots" ? "5" : game === "blackjack" ? "21" : "?"}</b></span><p className="overline">NOW PLAYING</p><h2 id="game-heading">{game === "slots" ? "Suds & Symbols" : game === "blackjack" ? "Blackjack" : "Odd or Even"}</h2><p>{game === "slots" ? `Match 3–5 symbols from the left across any of ${PAYLINES.length} natural paylines. Every unique winning line pays.` : game === "blackjack" ? "Build hands closer to 21 than the dealer. Blackjack pays 3:2, and the dealer hits soft 17." : "Choose a side. We’ll roll the number and see what you get! Best of luck hehe! :)"}</p><div className="rules">{game === "slots" ? <><span><small>MIN BET</small>5 Suds</span><span><small>LINES</small>{PAYLINES.length} active</span><span><small>LUCKY</small>Wild + bonus</span></> : game === "blackjack" ? <><span><small>SHOE</small>6 decks</span><span><small>BLACKJACK</small>3 : 2</span><span><small>SPLITS</small>4 max</span></> : <><span><small>PLAY</small>10 Suds</span><span><small>WIN</small>+10 Suds</span><span><small>CHANCE</small>50 / 50</span></>}</div><div className="soft-note"><span>i</span><p>{game === "slots" ? "LUCKY is wild. Find 3 anywhere for a big bonus, 4 for super, or 5+ for buffoon." : game === "blackjack" ? "Split equal-value cards up to four times. Split aces receive one card each." : "This is the first game made on this website!"}</p></div></div>
 
       {game === "slots" ? <div className="game-stage slot-stage">
         <div className="stage-head"><span>{PAYLINES.length} ways to make a splash</span><span>{suspenseLevel >= 2 ? "Hold your breath…" : slotsResult ? `${slotsResult.wins.length} line${slotsResult.wins.length === 1 ? "" : "s"} hit` : "Ready"}</span></div>
@@ -256,7 +269,7 @@ export function Arcade() {
         {!slotsResult && <p className="pay-hint">Each winning line has its own multiplier and payout.</p>}
         {profile && profile.balance < bet && <p className="message error">Lower your bet or collect more Suds.</p>}
         {gameError && <p className="message error" role="alert">{gameError}</p>}
-      </div> : <div className="game-stage"><div className="stage-head"><span>Choose odd or even, yo!</span><span>Round 001</span></div><fieldset disabled={!profile || playing}><legend className="sr-only">Your choice</legend><label className={choice === "odd" ? "choice selected" : "choice"}><input type="radio" name="choice" value="odd" checked={choice === "odd"} onChange={() => setChoice("odd")} /><span className="number-set">1 · 3 · 5</span><strong>Odd</strong><small>this feels odd...</small><i>✓</i></label><label className={choice === "even" ? "choice selected" : "choice"}><input type="radio" name="choice" value="even" checked={choice === "even"} onChange={() => setChoice("even")} /><span className="number-set">2 · 4 · 6</span><strong>Even</strong><small>even it out!</small><i>✓</i></label></fieldset><button className="roll" type="button" onClick={() => void playOddEven()} disabled={playing || !canPlay}><span>{playing ? "Hmm..." : "Go for Gold"}</span><b>›</b></button>{result && <div className={result.won ? "result won" : "result lost"} aria-live="polite"><span>{result.roll}</span><div><small>THE SIGNAL SAYS</small><h3>{result.won ? "SHABANG!!!" : "Almost."}</h3><p>{result.delta > 0 ? "+" : ""}{result.delta} Suds · {result.balance} remaining</p></div></div>}{gameError && <p className="message error" role="alert">{gameError}</p>}</div>}
+      </div> : game === "blackjack" ? <BlackjackTable profile={profile} onProfile={setProfile} /> : <div className="game-stage"><div className="stage-head"><span>Choose odd or even, yo!</span><span>Round 001</span></div><fieldset disabled={!profile || playing}><legend className="sr-only">Your choice</legend><label className={choice === "odd" ? "choice selected" : "choice"}><input type="radio" name="choice" value="odd" checked={choice === "odd"} onChange={() => setChoice("odd")} /><span className="number-set">1 · 3 · 5</span><strong>Odd</strong><small>this feels odd...</small><i>✓</i></label><label className={choice === "even" ? "choice selected" : "choice"}><input type="radio" name="choice" value="even" checked={choice === "even"} onChange={() => setChoice("even")} /><span className="number-set">2 · 4 · 6</span><strong>Even</strong><small>even it out!</small><i>✓</i></label></fieldset><button className="roll" type="button" onClick={() => void playOddEven()} disabled={playing || !canPlay}><span>{playing ? "Hmm..." : "Go for Gold"}</span><b>›</b></button>{result && <div className={result.won ? "result won" : "result lost"} aria-live="polite"><span>{result.roll}</span><div><small>THE SIGNAL SAYS</small><h3>{result.won ? "SHABANG!!!" : "Almost."}</h3><p>{result.delta > 0 ? "+" : ""}{result.delta} Suds · {result.balance} remaining</p></div></div>}{gameError && <p className="message error" role="alert">{gameError}</p>}</div>}
     </section>
     {loading && <p className="message">Finding your place…</p>}{accountError && <div className="message error" role="alert">Couldn’t find your player. <button onClick={() => void loadAccount()}>Try again</button></div>}
     <section className="pulse" id="pulse"><span><i /> Everything feels clear</span><span>1 Thessalonians 5:16</span><span>&quot;Rejoice always.&quot;</span></section><section className="about" id="about"><article><span className="mini-orb">○</span><div><small>THIS SITE</small><h3>For fun, nothing serious</h3><p>This site is just for me to build cool things, mostly vibe coded.</p></div></article><article><span className="mini-orb blue">◇</span><div><small>AND SO?</small><h3>More ways to play</h3><p>Try the new 20-line slots, then switch back to the original game anytime.</p></div></article></section>

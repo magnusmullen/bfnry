@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { ensureDatabase } from "../../../db/setup";
 import { getPlayerIdentity } from "../../player";
-import { evaluateLuckyBonus, evaluateSlotGrid, symbolFromRandom, type SlotGrid } from "../../slots";
+import { evaluateLuckyBonus, evaluateSlotGrid, symbolFromRandom, type SlotGrid } from "../../slots/engine";
 
 export async function POST(request: Request) {
   await ensureDatabase();
